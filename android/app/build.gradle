@@ -1,0 +1,42 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services" // Tambahan jika pakai Firebase
+}
+
+android {
+    namespace = "com.physiocare.app" // Ganti sesuai namespace kamu
+    compileSdk = 35                      // Naikkan compile SDK ke 35
+    ndkVersion = flutter.ndkVersion      // Tambahan jika perlu NDK
+
+    defaultConfig {
+        applicationId = "com.physiocare.app" // Ganti sesuai kebutuhan
+        minSdk = 26
+        targetSdk = 35
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+        multiDexEnabled true // Tambahan jika pakai banyak dependensi (seperti Firebase)
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+apply plugin: 'com.google.gms.google-services'
