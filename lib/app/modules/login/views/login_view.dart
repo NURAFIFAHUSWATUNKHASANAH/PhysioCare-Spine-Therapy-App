@@ -43,7 +43,7 @@ class LoginView extends GetView<LoginController> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Silahkan masuk untuk melanjutkan perjalanan kesehatan tulang belakang Anda.",
+                        "Silahkan masuk untuk melanjutkan perjalanan kehamilan Anda.",
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.grey[600],

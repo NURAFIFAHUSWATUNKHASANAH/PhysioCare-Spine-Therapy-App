@@ -16,7 +16,7 @@ class TentangView extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
         title: const Text(
-          'Tentang PhysioCare',
+          'Tentang PregMate',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
@@ -54,11 +54,11 @@ class TentangView extends StatelessWidget {
                       color: navyColor.withOpacity(0.05),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.auto_awesome_rounded, size: 48, color: navyColor),
+                    child: const Icon(Icons.pregnant_woman_rounded, size: 48, color: navyColor),
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    "Masa Depan Rehabilitasi",
+                    "PregMate",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -67,7 +67,7 @@ class TentangView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    "PhysioCare adalah aplikasi inovatif berbasis AI yang dirancang untuk membantu Anda dalam proses rehabilitasi fisik secara mandiri namun tetap terpantau.",
+                    "Aplikasi pintar untuk memantau kehamilan dan mendukung ibu dalam proses persalinan dengan fitur yang lengkap dan personal.",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
@@ -88,7 +88,7 @@ class TentangView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Mengapa PhysioCare?",
+                    "Fitur Unggulan PregMate",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -97,19 +97,34 @@ class TentangView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   _buildFeatureItem(
-                    Icons.psychology_outlined,
-                    "Analisis Gerakan AI",
-                    "Mendeteksi dan mengoreksi gerakan terapi Anda secara real-time.",
+                    Icons.child_friendly_rounded,
+                    "Status Kehamilan",
+                    "Pantau usia janin, trimester, HPL, dan perkembangan kehamilan setiap saat.",
                   ),
                   _buildFeatureItem(
-                    Icons.history_edu_rounded,
-                    "Riwayat Terapi",
-                    "Pantau perkembangan pemulihan Anda melalui data yang terukur.",
+                    Icons.monitor_weight,
+                    "Berat Badan & Kesehatan",
+                    "Catat berat badan, nutrisi, dan kondisi kesehatan ibu dan janin.",
                   ),
                   _buildFeatureItem(
-                    Icons.notifications_active_outlined,
-                    "Pengingat Cerdas",
-                    "Jadwal latihan yang dipersonalisasi agar sesi rehabilitasi tidak terlewat.",
+                    Icons.spa,
+                    "Senam & Relaksasi",
+                    "Panduan senam hamil dan latihan relaksasi untuk ibu hamil.",
+                  ),
+                  _buildFeatureItem(
+                    Icons.calendar_month,
+                    "Pengingat & Jadwal",
+                    "Notifikasi cerdas untuk jadwal check-up, obat, dan aktivitas harian.",
+                  ),
+                  _buildFeatureItem(
+                    Icons.description_rounded,
+                    "Edukasi & Artikel",
+                    "Akses artikel edukatif untuk menambah pengetahuan ibu dan keluarga.",
+                  ),
+                  _buildFeatureItem(
+                    Icons.forum,
+                    "Forum Ibu & Pendamping",
+                    "Diskusi dengan ibu hamil lainnya atau pendamping untuk berbagi pengalaman.",
                   ),
                 ],
               ),
@@ -125,7 +140,7 @@ class TentangView extends StatelessWidget {
                   const Divider(),
                   const SizedBox(height: 20),
                   Text(
-                    "💙 PhysioCare",
+                    "💙 PregMate",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: navyColor.withOpacity(0.8),
@@ -133,7 +148,7 @@ class TentangView extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    "Pulih Lebih Baik, Gerak Lebih Bebas",
+                    "Pantau Kehamilan, Dukung Ibu, Sehat Bersama",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,

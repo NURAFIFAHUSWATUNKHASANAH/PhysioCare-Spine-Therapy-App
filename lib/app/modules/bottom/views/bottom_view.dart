@@ -1,31 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pyhsiocare/app/modules/bottom/controllers/bottom_controller.dart';
-import 'package:pyhsiocare/app/modules/histori/views/histori_view.dart';
 import 'package:pyhsiocare/app/modules/home/views/home_view.dart';
 import 'package:pyhsiocare/app/modules/profil/views/profil_view.dart';
-import 'package:pyhsiocare/app/modules/terapi/views/terapi_view.dart';
+import 'package:pyhsiocare/app/modules/diskusi/views/diskusi_view.dart';
+import 'package:pyhsiocare/app/modules/informasi/views/informasi_view.dart';
 
 class BottomScreen extends GetView<BottomController> {
-  // Menghapus 'const' dari dalam list agar tidak terjadi error compile
-  final List<Widget> pages = [
-    const HomeView(),
-    TerapiView(),
-    HistoriView(),
-    const ProfileView(),
-  ];
+
+  const BottomScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // extendBody memungkinkan konten halaman mengalir di belakang navbar yang melayang
-      extendBody: true,
-      body: Obx(() => pages[controller.selectedIndex.value]),
-      
-      // 1. Navigation Bar Gaya Floating Modern
-      bottomNavigationBar: Obx(
-        () => Container(
-          margin: const EdgeInsets.fromLTRB(20, 0, 20, 25), // Memberikan jarak dari tepi layar
+
+    return Obx(() {
+
+      /// pages berdasarkan role
+      final pages = controller.role.value == "pendamping"
+          ? [
+              HomeView(),
+              InformasiView(),
+              const ProfileView(),
+            ]
+          : [
+              HomeView(),
+              DiskusiView(),
+              const ProfileView(),
+            ];
+
+      return Scaffold(
+        extendBody: true,
+
+        body: pages[controller.selectedIndex.value],
+
+        bottomNavigationBar: Container(
+          margin: const EdgeInsets.fromLTRB(20, 0, 20, 25),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(30),
@@ -37,55 +46,42 @@ class BottomScreen extends GetView<BottomController> {
               ),
             ],
           ),
+
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
+
             child: BottomNavigationBar(
               currentIndex: controller.selectedIndex.value,
               onTap: controller.changeIndex,
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.white,
-              selectedItemColor: const Color(0xFF0C2D57), // Senada dengan Dashboard
+              selectedItemColor: const Color(0xFF0C2D57),
               unselectedItemColor: const Color(0xFF94A3B8),
               showSelectedLabels: true,
-              showUnselectedLabels: false, // Membuat tampilan lebih clean
+              showUnselectedLabels: false,
               selectedFontSize: 12,
-              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+              selectedLabelStyle:
+                  const TextStyle(fontWeight: FontWeight.w700),
               elevation: 0,
-              items: [
-                _buildNavItem(Icons.grid_view_rounded, "Home"),
-                _buildNavItem(Icons.volunteer_activism_rounded, "Terapi"),
-                _buildNavItem(Icons.history_rounded, "Histori"),
-                _buildNavItem(Icons.person_rounded, "Profil"),
-              ],
+
+              items: controller.role.value == "pendamping"
+                  ? [
+                      _buildNavItem(Icons.home_rounded, "Home"),
+                      _buildNavItem(Icons.info_rounded, "Informasi"),
+                      _buildNavItem(Icons.person_rounded, "Profile"),
+                    ]
+                  : [
+                      _buildNavItem(Icons.home_rounded, "Home"),
+                      _buildNavItem(Icons.forum_rounded, "Forum"),
+                      _buildNavItem(Icons.person_rounded, "Profile"),
+                    ],
             ),
           ),
         ),
-      ),
-
-      // 2. Floating Action Button Estetik (Di atas Navbar)
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      // floatingActionButton: Padding(
-      //   padding: const EdgeInsets.only(bottom: 95), // Posisi tepat di atas navbar melayang
-      //   child: FloatingActionButton.extended(
-      //     onPressed: controller.openArtikelVisualisasi,
-      //     elevation: 4,
-      //     backgroundColor: const Color(0xFF0C2D57),
-      //     icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
-      //     label: const Text(
-      //       "Visualisasi Artikel",
-      //       style: TextStyle(
-      //         color: Colors.white,
-      //         fontWeight: FontWeight.bold,
-      //         letterSpacing: 0.5,
-      //       ),
-      //     ),
-      //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      //   ),
-      // ),
-    );
+      );
+    });
   }
 
-  // Fungsi pembantu untuk icon yang lebih interaktif
   BottomNavigationBarItem _buildNavItem(IconData icon, String label) {
     return BottomNavigationBarItem(
       icon: Icon(icon, size: 24),

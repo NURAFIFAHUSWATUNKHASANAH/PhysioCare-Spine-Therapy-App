@@ -7,7 +7,7 @@ import 'package:pyhsiocare/app/widgets/validasi_dialog.dart';
 class KeluhanDialog extends StatelessWidget {
   final KeluhanController controller = Get.find<KeluhanController>();
 
-  KeluhanDialog({Key? key}) : super(key: key);
+  KeluhanDialog({Key? key, required trimester}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,7 @@ class KeluhanDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "Pilih Keluhan",
+                  "Pilih Trimester",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -152,7 +152,7 @@ class KeluhanDialog extends StatelessWidget {
                                         padding: const EdgeInsets.symmetric(vertical: 12),
                                       ),
                                       child: const Text(
-                                        "Pilih Keluhan Ini",
+                                        "Pilih",
                                         style: TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                     ),

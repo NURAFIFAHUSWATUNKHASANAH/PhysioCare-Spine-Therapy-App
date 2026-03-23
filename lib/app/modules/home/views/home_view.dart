@@ -4,22 +4,39 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pyhsiocare/app/modules/artikel/views/article_detail_view.dart';
+import 'package:pyhsiocare/app/modules/diskusi/bindings/diskusi_binding.dart';
+import 'package:pyhsiocare/app/modules/diskusi/views/diskusi_view.dart';
+import 'package:pyhsiocare/app/modules/meditation/bindings/meditation_binding.dart';
+import 'package:pyhsiocare/app/modules/meditation/views/meditation_view.dart';
+import 'package:pyhsiocare/app/modules/mood/controllers/mood_controller.dart';
+import 'package:pyhsiocare/app/modules/mood/views/mood_view.dart';
+import 'package:pyhsiocare/app/modules/nama_bayi/bindings/nama_bayi_binding.dart';
+import 'package:pyhsiocare/app/modules/nama_bayi/views/nama_bayi_view.dart';
+import 'package:pyhsiocare/app/routes/app_pages.dart';
 import 'package:pyhsiocare/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'dart:math' as math;
 import 'package:pyhsiocare/app/modules/jadwal/controllers/jadwal_controller.dart';
 import 'package:pyhsiocare/app/modules/keluhan/controllers/keluhan_controller.dart';
 import 'package:pyhsiocare/app/modules/profil/controllers/profil_controller.dart';
-import 'package:pyhsiocare/app/widgets/keluhan_dialog.dart';
 import '../controllers/home_controller.dart';
 import 'package:pyhsiocare/app/modules/artikel/controllers/artikel_controller.dart';
 import 'package:pyhsiocare/app/modules/artikel/views/all_articles_view.dart';
 
 class HomeView extends GetView<HomeController> {
-  const HomeView({Key? key}) : super(key: key);
+  HomeView({Key? key}) : super(key: key);
+
+  final RxString role = "".obs;
+
+  Future<void> loadRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    role.value = prefs.getString("user_role") ?? "";
+  }
 
   @override
   Widget build(BuildContext context) {
+    loadRole();
+
     Get.lazyPut(() => KeluhanController());
     final profileController = Get.find<ProfileController>();
     final JadwalController jadwalController = Get.put(JadwalController());
@@ -28,17 +45,35 @@ class HomeView extends GetView<HomeController> {
 
     _updateTokenFCM();
 
+    const Color primaryColor = Color(0xFF0C2D57);
+    const Color secondaryColor = Color(0xFF163E72); // Biru sedikit lebih terang
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8), // Background medis yang segar
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Stack(
         children: [
-          // Background Decor (Lingkaran abstrak untuk kesan modern)
+          // Background Aesthetic Decor
+          Container(
+            height: 300,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [primaryColor, secondaryColor],
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+            ),
+          ),
+          // Subtle Circle Pattern
           Positioned(
             top: -50,
             right: -50,
             child: CircleAvatar(
               radius: 100,
-              backgroundColor: const Color(0xFF0C2D57).withOpacity(0.05),
+              backgroundColor: Colors.white.withOpacity(0.05),
             ),
           ),
 
@@ -46,10 +81,10 @@ class HomeView extends GetView<HomeController> {
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // 1. Header & Profile Section
+                /// HEADER
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -57,218 +92,289 @@ class HomeView extends GetView<HomeController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Selamat Pagi,",
+                              "Halo, ${getGreeting()}",
                               style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 14),
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 14,
+                                letterSpacing: 0.5,
+                              ),
                             ),
+                            const SizedBox(height: 4),
                             Obx(() => Text(
                                   profileController.namaC.value,
                                   style: const TextStyle(
-                                    fontSize: 22,
+                                    fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0C2D57),
+                                    color: Colors.white,
                                   ),
                                 )),
                           ],
                         ),
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black12, blurRadius: 10)
-                            ],
-                          ),
-                          child: const CircleAvatar(
-                            radius: 25,
-                            backgroundColor: Colors.white,
-                            child: Icon(Icons.person_outline,
-                                color: Color(0xFF0C2D57)),
-                          ),
-                        ),
+                        _buildProfileAvatar(Colors.white),
                       ],
                     ),
                   ),
                 ),
 
-                // 2. Hero Image (Visual Utama)
+                /// DASHBOARD KEHAMILAN (Elevated Card)
                 SliverToBoxAdapter(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    height: 180,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0C2D57), Color(0xFF2196F3)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(25),
-                      image: DecorationImage(
-                        image: AssetImage('assets/home.png'),
-                        fit: BoxFit.cover,
-                        opacity: 0.3, // Membuat gambar menyatu dengan gradient
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Kesehatan Tulang Belakang\nAdalah Prioritas Utama.",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
+                  child: Obx(() {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryColor.withOpacity(0.12),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Text(
-                              "Pantau Progress Anda",
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 12),
-                            ),
-                          )
                         ],
                       ),
-                    ),
-                  ),
-                ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                role.value == "pendamping"
+                                    ? "Status Kehamilan Pasangan"
+                                    : "Status Kehamilan",
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: primaryColor),
+                              ),
 
-                // 3. Stats Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Ringkasan Aktivitas",
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF334155)),
-                        ),
-                        const SizedBox(height: 15),
-                        Obx(() => Row(
+                              /// 👇 INI MENU TITIK 3 (HANYA UNTUK IBU)
+                              Obx(() => role.value == "ibu"
+                                  ? PopupMenuButton<String>(
+                                      icon: const Icon(Icons.more_vert,
+                                          color: primaryColor),
+                                      onSelected: (value) {
+                                        if (value == "edit") {
+                                          _showEditDialog(context);
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: "edit",
+                                          child: Text("Edit Data Kehamilan"),
+                                        ),
+                                      ],
+                                    )
+                                  : const Icon(Icons.auto_graph_rounded,
+                                      color: primaryColor, size: 20)),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildDashboardRow(
+                            "Usia Janin",
+                            "${controller.usiaMinggu} Minggu ${controller.usiaHari} Hari",
+                            Icons.child_friendly_rounded,
+                          ),
+                          const Divider(height: 24, thickness: 0.5),
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: _buildDashboardInfoSmall("Trimester",
+                                      controller.trimester.toString())),
+                              Container(
+                                  height: 30,
+                                  width: 1,
+                                  color: Colors.grey[200]),
+                              Expanded(
+                                  child: _buildDashboardInfoSmall(
+                                      "HPL", controller.hpl.toString())),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Obx(() {
+                            double progress = controller.usiaMinggu.value / 40;
+                            if (progress > 1) progress = 1;
+                            return Column(
                               children: [
-                                Expanded(
-                                  child: _buildModernStatCard(
-                                    title: "Total Latihan",
-                                    value:
-                                        "${controller.totalLatihan.value ?? 0}",
-                                    sub: "Sesi Selesai",
-                                    icon: Icons.bolt_rounded,
-                                    color: Colors.orange,
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 8,
+                                    backgroundColor: Colors.blue[50],
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                            primaryColor),
                                   ),
                                 ),
-                                const SizedBox(width: 15),
-                                Expanded(
-                                  child: _buildModernStatCard(
-                                    title: "Waktu Terapi",
-                                    sub: controller.totalWaktuLatihan.value
-                                            .contains('jam')
-                                        ? 'Jam Total'
-                                        : 'Menit Total',
-                                    value: controller
-                                            .totalWaktuLatihan.value.isNotEmpty
-                                        ? controller.totalWaktuLatihan.value
-                                            .split(' ')[0]
-                                        : '0',
-                                    icon: Icons.history_toggle_off_rounded,
-                                    color: Colors.blueAccent,
-                                  ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text("Progress",
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600])),
+                                    Text("${(progress * 100).toInt()}%",
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
+                                  ],
                                 ),
                               ],
-                            )),
-                      ],
-                    ),
+                            );
+                          }),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+
+                /// MENU GRID
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Obx(() {
+                      List<Widget> menus = [];
+                      if (role.value == "ibu") {
+                        menus.add(_buildGridMenu(
+                            label: "Senam",
+                            icon: Icons.self_improvement,
+                            color: const Color(0xFF4A90E2),
+                            onTap: () => Get.toNamed(Routes.SENAM)));
+                        menus.add(_buildGridMenu(
+                            label: "Daily Check",
+                            icon: Icons.favorite,
+                            color: const Color(0xFFFF6B6B),
+                            onTap: () {
+                              if (!Get.isRegistered<MoodController>())
+                                Get.put(MoodController());
+                              Get.to(() => MoodView());
+                            }));
+                        menus.add(_buildGridMenu(
+                            label: "Berat Badan",
+                            icon: Icons.monitor_weight,
+                            color: const Color(0xFF4CAF50),
+                            onTap: () => Get.toNamed(Routes.BERAT_BADAN)));
+                        menus.add(
+                          _buildGridMenu(
+                            label: "Forum Bunda",
+                            icon: Icons.forum,
+                            color: Colors.indigo,
+                            onTap: () => Get.to(() => DiskusiView(),
+                                binding: DiskusiBinding()),
+                          ),
+                        );
+                        menus.add(_buildGridMenu(
+                            label: "Rileks",
+                            icon: Icons.spa,
+                            color: const Color(0xFF9C27B0),
+                            onTap: () => Get.to(() => MeditationView(),
+                                binding: MeditationBinding())));
+                      }
+
+                      if (role.value == "pendamping") {
+                        menus.add(_buildGridMenu(
+                            label: "Berat Badan",
+                            icon: Icons.monitor_weight,
+                            color: const Color(0xFF4CAF50),
+                            onTap: () => Get.toNamed(Routes.BERAT_BADAN)));
+                        menus.add(
+                          _buildGridMenu(
+                            label: "History",
+                            icon: Icons.history_rounded,
+                            color: const Color(0xFF607D8B),
+                            onTap: () => Get.toNamed(Routes.HISTORI))
+                        );
+                      }
+
+                      menus.addAll([
+                        _buildGridMenu(
+                            label: "Pengingat",
+                            icon: Icons.calendar_month,
+                            color: const Color(0xFF009688),
+                            onTap: () => jadwalController.showJadwalDialog()),
+                        _buildGridMenu(
+                            label: "Janin",
+                            icon: Icons.child_care,
+                            color: const Color(0xFFFF9800),
+                            onTap: () => Get.toNamed(Routes.UKURAN_JANIN)),
+                        _buildGridMenu(
+                            label: "Nama",
+                            icon: Icons.auto_awesome,
+                            color: const Color(0xFF673AB7),
+                            onTap: () => Get.to(() => NamaBayiView(),
+                                binding: NamaBayiBinding())),
+                        _buildGridMenu(
+                            label: "Artikel",
+                            icon: Icons.description_rounded,
+                            color: const Color(0xFF2196F3),
+                            onTap: () => Get.to(() => AllArtikelView())),
+                      ]);
+
+                      return GridView.count(
+                        crossAxisCount: 4,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 20,
+                        crossAxisSpacing: 16,
+                        children: menus,
+                      );
+                    }),
                   ),
                 ),
 
-                // 4. Action Buttons (Grid Style)
+                /// SECTION TITLE ARTIKEL
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: _buildActionButton(
-                            onPressed: () => Get.dialog(KeluhanDialog()),
-                            label: "Cek Keluhan",
-                            icon: Icons.search_rounded,
-                            color: const Color(0xFF0C2D57),
-                          ),
+                        const Text(
+                          "Edukasi Pilihan",
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor),
                         ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: _buildActionButton(
-                            onPressed: () =>
-                                jadwalController.showJadwalDialog(),
-                            label: "Buat Jadwal",
-                            icon: Icons.calendar_month_rounded,
-                            color: Colors.white,
-                            textColor: const Color(0xFF0C2D57),
-                          ),
-                        ),
+                        TextButton(
+                          onPressed: () => Get.to(() => AllArtikelView()),
+                          child: const Text("Lihat Semua",
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.blue)),
+                        )
                       ],
                     ),
                   ),
                 ),
 
-                // 5. Article Section
+                /// HORIZONTAL ARTIKEL
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Edukasi Spine Care",
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF334155)),
-                            ),
-                            TextButton(
-                              onPressed: () => Get.to(() => AllArtikelView()),
-                              child: const Text("Lihat Semua"),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Obx(() {
-                          if (artikelController.isLoading.value)
-                            return const CircularProgressIndicator();
-                          return SizedBox(
-                            height: 250,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: artikelController.artikels.length > 5
-                                  ? 5
-                                  : artikelController.artikels.length,
-                              itemBuilder: (context, index) {
-                                final artikel =
-                                    artikelController.artikels[index];
-                                return _buildModernArticleCard(artikel);
-                              },
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
+                  child: SizedBox(
+                    height: 220,
+                    child: Obx(() {
+                      if (artikelController.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: artikelController.artikels.length > 5
+                            ? 5
+                            : artikelController.artikels.length,
+                        itemBuilder: (context, index) {
+                          return _buildModernArticleCard(
+                              artikelController.artikels[index]);
+                        },
+                      );
+                    }),
                   ),
                 ),
+
+                const SliverToBoxAdapter(child: SizedBox(height: 30)),
               ],
             ),
           ),
@@ -277,94 +383,112 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  // Helper Widget: Stat Card Modern
-  Widget _buildModernStatCard(
-      {required String title,
-      required String value,
-      required String sub,
-      required IconData icon,
-      required Color color}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 10))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 15),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          Text(sub, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  // Helper Widget: Action Button Modern
-  Widget _buildActionButton(
-      {required VoidCallback onPressed,
-      required String label,
-      required IconData icon,
-      required Color color,
-      Color? textColor}) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: color == Colors.white
-              ? [const BoxShadow(color: Colors.black12, blurRadius: 10)]
-              : [
-                  BoxShadow(
-                      color: color.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5))
-                ],
+  Widget _buildDashboardRow(String title, String value, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+              color: const Color(0xFF0C2D57).withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, size: 20, color: const Color(0xFF0C2D57)),
         ),
-        child: Column(
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: textColor ?? Colors.white),
-            const SizedBox(height: 8),
-            Text(label,
-                style: TextStyle(
-                    color: textColor ?? Colors.white,
-                    fontWeight: FontWeight.bold)),
+            Text(title,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87)),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardInfoSmall(String title, String value) {
+    return Column(
+      children: [
+        Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        const SizedBox(height: 4),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0C2D57))),
+      ],
+    );
+  }
+
+  Widget _buildGridMenu(
+      {required String label,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                    color: color.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF475569)),
+          ),
+        ],
       ),
     );
   }
 
-  // Helper Widget: Article Card Modern
+  Widget _buildProfileAvatar(Color color) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withOpacity(0.5), width: 1.5)),
+      child: const CircleAvatar(
+        radius: 22,
+        backgroundColor: Colors.white24,
+        child: Icon(Icons.person_rounded, color: Colors.white, size: 26),
+      ),
+    );
+  }
+
   Widget _buildModernArticleCard(artikel) {
     return GestureDetector(
       onTap: () => Get.to(() => ArtikelDetailView(id: artikel.id)),
       child: Container(
         width: 200,
-        margin: const EdgeInsets.only(right: 20, bottom: 10),
+        margin: const EdgeInsets.only(right: 16, bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 5))
           ],
         ),
         child: Column(
@@ -373,7 +497,7 @@ class HomeView extends GetView<HomeController> {
             Expanded(
               child: ClipRRect(
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
+                    const BorderRadius.vertical(top: Radius.circular(24)),
                 child: artikel.imageUrl.isNotEmpty
                     ? Image.network(artikel.imageUrl,
                         fit: BoxFit.cover, width: double.infinity)
@@ -381,20 +505,15 @@ class HomeView extends GetView<HomeController> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    artikel.title,
-                    maxLines: 2,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(height: 5),
-                  Text("Baca Selengkapnya",
-                      style: TextStyle(color: Colors.blue[700], fontSize: 11)),
-                ],
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                artikel.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E293B)),
               ),
             )
           ],
@@ -418,6 +537,245 @@ class HomeView extends GetView<HomeController> {
       }
     } catch (e) {
       debugPrint('Error update token: $e');
+    }
+  }
+
+  void _showEditDialog(BuildContext context) {
+    final c = Get.find<HomeController>();
+    final TextEditingController hphtController =
+        TextEditingController(text: c.hpht.value);
+
+    // Warna tema dari HomeView Anda
+    const Color primaryColor = Color(0xFF0C2D57);
+
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle Bar (Garis kecil di atas)
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const Text(
+              "Update Data Kehamilan",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Masukkan tanggal Hari Pertama Haid Terakhir (HPHT) Anda untuk menghitung usia janin.",
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+
+            // Input Field yang Estetik
+            GestureDetector(
+              onTap: () async {
+                final picked = await _pickDate(context, c.hpht.value);
+                if (picked != null) {
+                  hphtController.text = _formatDate(picked);
+                }
+              },
+              child: AbsorbPointer(
+                child: TextFormField(
+                  controller: hphtController,
+                  decoration: InputDecoration(
+                    labelText: "Tanggal HPHT",
+                    labelStyle: const TextStyle(color: primaryColor),
+                    prefixIcon: const Icon(Icons.calendar_month_rounded,
+                        color: primaryColor),
+                    filled: true,
+                    fillColor: primaryColor.withOpacity(0.05),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide:
+                          const BorderSide(color: primaryColor, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Tombol Aksi
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Get.back(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      side: const BorderSide(color: primaryColor),
+                    ),
+                    child: const Text("Batal",
+                        style: TextStyle(color: primaryColor)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _handleSubmit(hphtController.text),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: const Text("Simpan Perubahan",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  Future<bool> _updateKehamilan(String hpht) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    try {
+      final response = await http.put(
+        Uri.parse("${ApiConfig.baseUrl}/pregnancy/update"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json"
+        },
+        body: jsonEncode({"hpht": hpht}),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<DateTime?> _pickDate(BuildContext context, String currentValue) async {
+    DateTime initialDate = DateTime.now();
+    if (currentValue.isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(currentValue);
+      } catch (_) {}
+    }
+
+    return await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF0C2D57), // Header background
+              onPrimary: Colors.white, // Header text
+              onSurface: Color(0xFF0C2D57), // Body text
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF0C2D57)),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+  }
+
+  void _handleSubmit(String hpht) async {
+    if (hpht.isEmpty) {
+      Get.snackbar("Error", "HPHT tidak boleh kosong");
+      return;
+    }
+
+    try {
+      final selected = DateTime.parse(hpht);
+      final today = DateTime.now();
+
+      final selectedDate =
+          DateTime(selected.year, selected.month, selected.day);
+      final todayDate = DateTime(today.year, today.month, today.day);
+
+      if (selectedDate.isAfter(todayDate)) {
+        Get.snackbar("Error", "HPHT tidak boleh melebihi hari ini");
+        return;
+      }
+
+      /// 🔥 tampilkan loading
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      final success = await _updateKehamilan(hpht);
+
+      /// 🔥 tutup loading
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      if (success) {
+        /// update dashboard
+        await Get.find<HomeController>().fetchDashboardKehamilan();
+
+        /// 🔥 INI KUNCI: tutup bottomSheet
+        Get.back();
+
+        Get.snackbar("Sukses", "HPHT berhasil diperbarui");
+      } else {
+        Get.snackbar("Error", "Gagal update HPHT");
+      }
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) Get.back();
+      Get.snackbar("Error", "Format tanggal tidak valid");
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  String getGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour >= 5 && hour < 12) {
+      return "Selamat Pagi";
+    } else if (hour >= 12 && hour < 15) {
+      return "Selamat Siang";
+    } else if (hour >= 15 && hour < 18) {
+      return "Selamat Sore";
+    } else {
+      return "Selamat Malam";
     }
   }
 }

@@ -12,7 +12,7 @@ class KeluhanView extends GetView<KeluhanController> {
       body: Center(
         child: ElevatedButton(
           onPressed: () {
-            Get.dialog(KeluhanDialog());
+            Get.dialog(KeluhanDialog(trimester: null,));
           },
           child: Text('Pilih Keluhan Anda'),
         ),

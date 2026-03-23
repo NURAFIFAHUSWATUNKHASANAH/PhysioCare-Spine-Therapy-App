@@ -11,16 +11,14 @@ class ApiConfig {
       _baseUrl = _baseUrl.substring(0, _baseUrl.length - 1);
     }
     print('Base URL updated to: $_baseUrl');
-
     
   }
   
   // Inisialisasi baseUrl default
   static void init() {
-    _baseUrl = 'http://192.168.1.9:5000';
+    _baseUrl = 'http://10.1.124.189:5000';
     print('Base URL updated to: $_baseUrl');
   }
-
   // ---------------- Auth ----------------
   static String get registerUrl => '$_baseUrl/auth/register';
   static String get loginUrl => '$_baseUrl/auth/login';
@@ -50,4 +48,21 @@ class ApiConfig {
 
   static String get verifyOtpUrl => '$_baseUrl/auth/verify-otp';
 
+  // ---------------- Diskusi ----------------
+static String get diskusiUrl => '$_baseUrl/diskusi';
+static String commentUrl(String postId) => '$_baseUrl/diskusi/comment/$postId';
+static String likeUrl(String postId) => '$_baseUrl/diskusi/like/$postId';
+
+// ---------------- Pregnancy ----------------
+static String get pregnancyDashboardUrl => '$_baseUrl/pregnancy/dashboard';
+static String get pregnancyValidateUrl => '$_baseUrl/pregnancy/validate';
+static String get pregnancyDashboardPasanganUrl => '$_baseUrl/pregnancy/dashboard/pasangan';
+
+// ---------------- Baby Name AI ----------------
+static String get generateBabyNameUrl => '$_baseUrl/ai/babyname';
+static String get babyNameFavoriteUrl => '$_baseUrl/babyname/favorite';
+static String deleteBabyNameFavoriteUrl(String name) => '$_baseUrl/babyname/favorite/$name';
+
+// ---------------- Mood / Recommendation ----------------
+static String get moodRecommendationUrl => '$_baseUrl/ai/recommendation';
 }

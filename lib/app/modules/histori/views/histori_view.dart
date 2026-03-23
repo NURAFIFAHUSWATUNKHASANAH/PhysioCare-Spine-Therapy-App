@@ -1,298 +1,324 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/histori_controller.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
-class HistoriView extends StatelessWidget {
+class HistoriView extends GetView<HistoriController> {
   const HistoriView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final HistoriController controller = Get.find();
-    
+    const Color primary = Color(0xFF0C2D57);
+    const Color accent = Color(0xFFFF8E9E);
+    const Color bg = Color(0xFFF6F8FC);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFDFF), // Senada dengan HomeView
+      backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0C2D57), size: 20),
-          onPressed: () => Get.back(),
-        ),
         title: const Text(
           "Riwayat Latihan",
-          style: TextStyle(color: Color(0xFF0C2D57), fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: primary,
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Chart Section (Visual Utama)
-            const Text(
-              "Analisis Akurasi",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-            ),
-            const SizedBox(height: 15),
-            Container(
-              padding: const EdgeInsets.fromLTRB(15, 25, 15, 15),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Obx(() {
-                final labels = controller.averageByLabel.keys.toList();
-                final data = controller.averageByLabel.values.toList();
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-                return Column(
-                  children: [
-                    SizedBox(
-                      height: 220,
-                      child: labels.isNotEmpty
-                          ? _buildBarChart(data, labels)
-                          : const Center(child: Text("Belum ada data grafik", style: TextStyle(color: Color(0xFF94A3B8)))),
-                    ),
-                    if (labels.isNotEmpty) ...[
-                      const SizedBox(height: 15),
-                      const Text(
-                        "Rata-rata akurasi per jenis gerakan (%)",
-                        style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
-                      ),
-                    ]
-                  ],
+        if (controller.historiList.isEmpty) {
+          return const Center(child: Text("Belum ada riwayat latihan"));
+        }
+
+        return RefreshIndicator(
+          onRefresh: controller.fetchHistory,
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+
+              /// HEADER DASHBOARD
+              _dashboardCard(primary, accent),
+
+              const SizedBox(height: 25),
+
+              /// SUMMARY CARD
+              _summarySection(primary),
+
+              const SizedBox(height: 30),
+
+              const Text(
+                "Aktivitas Terakhir",
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B)),
+              ),
+
+              const SizedBox(height: 15),
+
+              /// LIST HISTORI
+              ...controller.historiList.map((h) {
+                final tanggal = DateTime.parse(h["tanggal"]);
+                final accuracy =
+                    double.tryParse(h["accuracy"].toString()) ?? 0;
+
+                return _historyCard(
+                  h["label"] ?? "",
+                  accuracy,
+                  DateFormat('dd MMM yyyy, HH:mm').format(tanggal),
+                  primary,
                 );
-              }),
-            ),
-
-            const SizedBox(height: 25),
-
-            // 2. Statistik Bento Cards
-            const Text(
-              "Ringkasan Performa",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-            ),
-            const SizedBox(height: 15),
-            Obx(() => Row(
-                  children: [
-                    Expanded(
-                      child: _statCard(
-                        "Total Latihan",
-                        "${controller.historyList.length}",
-                        "Sesi Selesai",
-                        Icons.history_rounded,
-                        const Color(0xFF0C2D57),
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: _statCard(
-                        "Rerata Skor",
-                        "${_averageAccuracy(controller.historyList)}%",
-                        "Tingkat Akurasi",
-                        Icons.analytics_rounded,
-                        const Color(0xFF3B82F6),
-                      ),
-                    ),
-                  ],
-                )),
-
-            const SizedBox(height: 30),
-
-            // 3. List Riwayat
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Aktivitas Terakhir",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-                ),
-                Icon(Icons.sort_rounded, color: Colors.grey[400], size: 20),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Obx(() => ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: controller.historyList.length,
-                  itemBuilder: (context, index) {
-                    final item = controller.historyList[index];
-                    return _historyCard(
-                      item["label"] ?? "Terapi",
-                      item["tanggal"] ?? "Tanggal tidak tersedia",
-                      (item["accuracy"] ?? 0).toDouble(),
-                    );
-                  },
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBarChart(List<double> data, List<String> labels) {
-    return BarChart(
-      BarChartData(
-        maxY: 100,
-        minY: 0,
-        barGroups: List.generate(data.length, (i) {
-          return BarChartGroupData(
-            x: i,
-            barRods: [
-              BarChartRodData(
-                toY: data[i],
-                width: 22,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                color: const Color(0xFF0C2D57),
-                backDrawRodData: BackgroundBarChartRodData(
-                  show: true,
-                  toY: 100,
-                  color: const Color(0xFFF1F5F9),
-                ),
-              ),
+              }).toList(),
             ],
-          );
-        }),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                int index = value.toInt();
-                if (index < labels.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 10.0),
-                    child: Text(
-                      labels[index].length > 8 ? '${labels[index].substring(0, 5)}..' : labels[index],
-                      style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-              reservedSize: 30,
-            ),
           ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 25,
-              getTitlesWidget: (value, meta) => Text(
-                '${value.toInt()}%',
-                style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
-              ),
-              reservedSize: 35,
-            ),
-          ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: 25,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: const Color(0xFFE2E8F0),
-            strokeWidth: 1,
-            dashArray: [5, 5],
-          ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
-  Widget _statCard(String title, String value, String sub, IconData icon, Color accentColor) {
+  /// DASHBOARD CARD
+  Widget _dashboardCard(Color primary, Color accent) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        gradient: LinearGradient(
+          colors: [primary, primary.withOpacity(0.7)],
+        ),
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: accentColor.withOpacity(0.1),
-            child: Icon(icon, color: accentColor, size: 20),
+
+          const Text(
+            "PROGRESS LATIHAN",
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+                fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 15),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-          Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
-          Text(sub, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+
+          const SizedBox(height: 8),
+
+          const Text(
+            "Statistik Latihan",
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 20),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+
+              _statItem(
+                Icons.fitness_center,
+                controller.historiList.length.toString(),
+                "Total Sesi",
+                accent,
+              ),
+
+              _statItem(
+                Icons.analytics,
+                _avgAccuracy(),
+                "Rata-rata",
+                Colors.white,
+              ),
+
+              _statItem(
+                Icons.calendar_today,
+                "${controller.historiList.length}",
+                "Hari Aktif",
+                Colors.white,
+              ),
+            ],
+          )
         ],
       ),
     );
   }
 
-  Widget _historyCard(String terapi, String tanggal, double akurasi) {
-    Color statusColor = akurasi >= 80 ? Colors.green : (akurasi >= 60 ? Colors.orange : Colors.red);
-    
+  Widget _statItem(
+      IconData icon, String value, String label, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white54, fontSize: 10),
+        )
+      ],
+    );
+  }
+
+  /// SUMMARY CARD
+  Widget _summarySection(Color primary) {
+    return Row(
+      children: [
+        Expanded(
+          child: _infoCard(
+            "Total Latihan",
+            controller.historiList.length.toString(),
+            Icons.history,
+            primary,
+          ),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: _infoCard(
+            "Rata-rata",
+            _avgAccuracy(),
+            Icons.analytics,
+            Colors.blue,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+
+          CircleAvatar(
+            backgroundColor: color.withOpacity(0.1),
+            child: Icon(icon, color: color),
+          ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            value,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+
+          Text(
+            title,
+            style: const TextStyle(color: Colors.grey),
+          )
+        ],
+      ),
+    );
+  }
+
+  /// CARD HISTORI
+  Widget _historyCard(
+      String label, double accuracy, String date, Color primary) {
+    Color statusColor = accuracy >= 80
+        ? Colors.green
+        : (accuracy >= 60 ? Colors.orange : Colors.red);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 8,
+            color: Colors.black.withOpacity(0.04),
+          )
+        ],
       ),
       child: Row(
         children: [
+
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(14),
+              color: primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.fitness_center_rounded, color: Color(0xFF0C2D57)),
+            child: Icon(Icons.self_improvement, color: primary),
           ),
+
           const SizedBox(width: 15),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(terapi, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E293B))),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey[400]),
-                    const SizedBox(width: 5),
-                    Text(tanggal, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                  ],
+
+                Text(
+                  label,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14),
                 ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  date,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                )
               ],
             ),
           ),
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+
               Text(
-                "${akurasi.toStringAsFixed(1)}%",
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: statusColor),
+                "${accuracy.toStringAsFixed(0)}%",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: statusColor),
               ),
-              const Text("Akurasi", style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+
+              const Text(
+                "Akurasi",
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              )
             ],
-          ),
+          )
         ],
       ),
     );
   }
 
-  String _averageAccuracy(List<Map<String, dynamic>> list) {
-    if (list.isEmpty) return "0.0";
-    double sum = 0;
-    int count = 0;
-    for (var e in list) {
-      if (e["accuracy"] != null) {
-        sum += (e["accuracy"] as num).toDouble();
-        count++;
-      }
+  String _avgAccuracy() {
+    if (controller.historiList.isEmpty) return "0%";
+
+    double total = 0;
+
+    for (var h in controller.historiList) {
+      total += double.tryParse(h["accuracy"].toString()) ?? 0;
     }
-    return count == 0 ? "0.0" : (sum / count).toStringAsFixed(1);
+
+    double avg = total / controller.historiList.length;
+
+    return "${avg.toStringAsFixed(1)}%";
   }
 }

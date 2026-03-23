@@ -11,7 +11,8 @@ class RegisterView extends GetView<RegisterController> {
       backgroundColor: const Color(0xFFFBFDFF),
       body: Stack(
         children: [
-          // Dekorasi Background (Aksen Halus)
+
+          // Background decoration
           Positioned(
             top: -50,
             left: -50,
@@ -20,7 +21,7 @@ class RegisterView extends GetView<RegisterController> {
               backgroundColor: const Color(0xFF0C2D57).withOpacity(0.05),
             ),
           ),
-          
+
           Center(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -31,7 +32,9 @@ class RegisterView extends GetView<RegisterController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Section
+
+                      /// ================= HEADER =================
+
                       const Text(
                         "Daftar Akun",
                         style: TextStyle(
@@ -41,61 +44,122 @@ class RegisterView extends GetView<RegisterController> {
                           letterSpacing: -1,
                         ),
                       ),
+
                       const SizedBox(height: 8),
+
                       Text(
-                        "Mulailah perjalanan pemulihan Anda dengan PhysioCare.",
+                        "Mulai perjalanan kesehatan ibu hamil bersama pasangan.",
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.grey[600],
                           height: 1.5,
                         ),
                       ),
+
                       const SizedBox(height: 35),
 
-                      // Input Email
-                      _buildLabel("Email"),
+                      /// ================= EMAIL =================
+
+                      _buildLabel("Email Ibu"),
+
                       const SizedBox(height: 8),
+
                       _buildTextField(
                         controller: controller.emailController,
-                        hint: "Contoh: user@email.com",
+                        hint: "Contoh: ibu@email.com",
                         icon: Icons.email_outlined,
                       ),
+
                       const SizedBox(height: 20),
 
-                      // Input Nama
-                      _buildLabel("Nama Lengkap"),
+                      /// ================= NAMA IBU =================
+
+                      _buildLabel("Nama Lengkap Ibu"),
+
                       const SizedBox(height: 8),
+
                       _buildTextField(
                         controller: controller.nameController,
-                        hint: "Masukkan nama lengkap Anda",
+                        hint: "Masukkan nama lengkap",
                         icon: Icons.person_outline_rounded,
                       ),
+
                       const SizedBox(height: 20),
 
-                      // Input Password
+                      /// ================= PASSWORD =================
+
                       _buildLabel("Kata Sandi"),
+
                       const SizedBox(height: 8),
+
                       _buildTextField(
                         controller: controller.passwordController,
                         hint: "••••••••",
                         icon: Icons.lock_outline_rounded,
                         isPassword: true,
                       ),
+
+                      const SizedBox(height: 30),
+
+                      /// ================= DATA SUAMI =================
+
+                      const Text(
+                        "Data Pendamping (Opsional)",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0C2D57),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// NAMA SUAMI
+
+                      _buildLabel("Nama Suami"),
+
+                      const SizedBox(height: 8),
+
+                      _buildTextField(
+                        controller: controller.husbandNameController,
+                        hint: "Masukkan nama suami",
+                        icon: Icons.person,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// EMAIL SUAMI
+
+                      _buildLabel("Email Suami"),
+
+                      const SizedBox(height: 8),
+
+                      _buildTextField(
+                        controller: controller.husbandEmailController,
+                        hint: "Masukkan email suami",
+                        icon: Icons.email,
+                      ),
+
                       const SizedBox(height: 40),
 
-                      // Tombol Daftar
+                      /// ================= BUTTON =================
+
                       _buildRegisterButton(),
-                      
+
                       const SizedBox(height: 32),
 
-                      // Footer: Link ke Login
+                      /// ================= LOGIN =================
+
                       Center(
                         child: GestureDetector(
                           onTap: () => Get.toNamed('/login'),
                           child: RichText(
                             text: TextSpan(
                               text: "Sudah punya akun? ",
-                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
                               children: const [
                                 TextSpan(
                                   text: "Masuk Disini",
@@ -110,6 +174,7 @@ class RegisterView extends GetView<RegisterController> {
                           ),
                         ),
                       ),
+
                     ],
                   ),
                 ),
@@ -121,7 +186,7 @@ class RegisterView extends GetView<RegisterController> {
     );
   }
 
-  // --- Widget Helpers ---
+  /// ================= LABEL =================
 
   Widget _buildLabel(String text) {
     return Text(
@@ -133,6 +198,8 @@ class RegisterView extends GetView<RegisterController> {
       ),
     );
   }
+
+  /// ================= TEXTFIELD =================
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -160,7 +227,8 @@ class RegisterView extends GetView<RegisterController> {
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
           prefixIcon: Icon(icon, color: const Color(0xFF0C2D57), size: 20),
-          contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
@@ -171,12 +239,15 @@ class RegisterView extends GetView<RegisterController> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFF0C2D57), width: 1.5),
+            borderSide:
+                const BorderSide(color: Color(0xFF0C2D57), width: 1.5),
           ),
         ),
       ),
     );
   }
+
+  /// ================= REGISTER BUTTON =================
 
   Widget _buildRegisterButton() {
     return Container(
@@ -196,14 +267,16 @@ class RegisterView extends GetView<RegisterController> {
         onPressed: controller.register,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0C2D57),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
         child: const Text(
           "Buat Akun",
           style: TextStyle(
-            fontSize: 16, 
-            fontWeight: FontWeight.bold, 
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
             color: Colors.white,
             letterSpacing: 0.5,
           ),

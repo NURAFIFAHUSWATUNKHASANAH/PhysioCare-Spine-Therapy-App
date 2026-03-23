@@ -5,9 +5,13 @@ import 'package:http/http.dart' as http;
 import 'package:pyhsiocare/config/api_config.dart';
 
 class RegisterController extends GetxController {
+
   final TextEditingController emailController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  final TextEditingController husbandNameController = TextEditingController();
+  final TextEditingController husbandEmailController = TextEditingController();
 
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
@@ -15,65 +19,83 @@ class RegisterController extends GetxController {
   }
 
   void register() async {
+
     final String nama = nameController.text.trim();
     final String email = emailController.text.trim();
     final String password = passwordController.text.trim();
 
+    final String namaSuami = husbandNameController.text.trim();
+    final String emailSuami = husbandEmailController.text.trim();
+
     if (nama.isEmpty || email.isEmpty || password.isEmpty) {
-      _showError("Semua field harus diisi");
+
+      Get.snackbar("Error", "Semua data ibu harus diisi");
+
       return;
     }
 
     if (!isValidEmail(email)) {
-      _showError("Format email tidak valid");
+
+      Get.snackbar("Error", "Format email tidak valid");
+
       return;
     }
 
     try {
+
       final response = await http.post(
+
         Uri.parse(ApiConfig.registerUrl),
-        headers: {"Content-Type": "application/json"},
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
         body: jsonEncode({
+
           "nama": nama,
           "email": email,
           "password": password,
+
+          "nama_suami": namaSuami,
+          "email_suami": emailSuami
+
         }),
+
       );
 
       final data = jsonDecode(response.body);
-      print("Register response: $data");
 
       if (response.statusCode == 201) {
+
         var userId = data["user_id"];
 
-        // Periksa null dan kosong dengan aman
-        if (userId == null || userId.toString().trim().isEmpty) {
-          _showError("User ID tidak ditemukan, silakan coba lagi");
-          return;
-        }
+        Get.snackbar(
+          "Sukses",
+          "OTP dikirim ke email Anda",
+          snackPosition: SnackPosition.BOTTOM,
+        );
 
-        // Konversi ke String jika perlu
-        if (userId is! String) {
-          userId = userId.toString();
-        }
+        Get.toNamed(
+          "/verify-otp",
+          arguments: {"user_id": userId},
+        );
 
-        Get.snackbar("Sukses", "Kode OTP sudah dikirim ke email Anda",
-            snackPosition: SnackPosition.BOTTOM);
-
-        // Navigasi ke halaman verifikasi OTP dengan user_id
-        Get.toNamed("/verify-otp", arguments: {"user_id": userId});
       } else {
-        _showError(data["message"] ?? "Gagal mendaftar");
-      }
-    } catch (e) {
-      _showError("Terjadi kesalahan koneksi: $e");
-    }
-  }
 
-  void _showError(String message) {
-    Get.snackbar("Error", message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.white);
+        Get.snackbar(
+          "Error",
+          data["message"] ?? "Registrasi gagal"
+        );
+
+      }
+
+    } catch (e) {
+
+      Get.snackbar(
+        "Error",
+        "Koneksi gagal: $e"
+      );
+    }
   }
 }

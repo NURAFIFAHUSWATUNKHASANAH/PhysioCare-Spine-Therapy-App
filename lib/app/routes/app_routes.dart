@@ -21,6 +21,18 @@ abstract class Routes {
   static const ARTICLE_DETAIL = _Paths.ARTICLE_DETAIL;
   static const FORGOT_PASSWORD = _Paths.FORGOT_PASSWORD;
   static const VERIFY_OTP = _Paths.VERIFY_OTP;
+  static const MENU = _Paths.MENU;
+  static const MOOD = _Paths.MOOD;
+  static const RECIPE = _Paths.RECIPE;
+  static const DISKUSI = _Paths.DISKUSI;
+  static const MEDITATION = _Paths.MEDITATION;
+  static const VALIDASI_KEHAMILAN = _Paths.VALIDASI_KEHAMILAN;
+  static const UKURAN_JANIN = _Paths.UKURAN_JANIN;
+  static const BERAT_BADAN = _Paths.BERAT_BADAN;
+  static const NAMA_BAYI = _Paths.NAMA_BAYI;
+  static const SENAM = _Paths.SENAM;
+  static const SENAM_AI = _Paths.SENAM_AI;
+  static const INFORMASI = _Paths.INFORMASI;
 }
 
 abstract class _Paths {
@@ -43,4 +55,16 @@ abstract class _Paths {
   static const ARTICLE_DETAIL = '/article_detail';
   static const FORGOT_PASSWORD = '/forgot-password';
   static const VERIFY_OTP = '/verify-otp';
+  static const MENU = '/menu';
+  static const MOOD = '/mood';
+  static const RECIPE = '/recipe';
+  static const DISKUSI = '/diskusi';
+  static const MEDITATION = '/meditation';
+  static const VALIDASI_KEHAMILAN = '/validasi-kehamilan';
+  static const UKURAN_JANIN = '/ukuran-janin';
+  static const BERAT_BADAN = '/berat-badan';
+  static const NAMA_BAYI = '/nama-bayi';
+  static const SENAM = '/senam';
+  static const SENAM_AI = '/senam-ai';
+  static const INFORMASI = '/informasi';
 }

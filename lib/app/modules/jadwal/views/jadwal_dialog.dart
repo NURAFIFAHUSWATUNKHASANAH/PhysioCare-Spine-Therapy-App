@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart'; // Untuk format Indonesia
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pyhsiocare/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class JadwalDialog extends StatefulWidget {
+  const JadwalDialog({super.key});
+
   @override
   _JadwalDialogState createState() => _JadwalDialogState();
 }
@@ -23,6 +26,7 @@ class _JadwalDialogState extends State<JadwalDialog> {
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('id_ID', null); // Inisialisasi format Indo
     _initFCMToken();
     _loadUserIdFromPrefs();
   }
@@ -33,13 +37,12 @@ class _JadwalDialogState extends State<JadwalDialog> {
       String? token = await FirebaseMessaging.instance.getToken();
       setState(() => fcmToken = token);
     } catch (e) {
-      print('Gagal mendapatkan FCM token: $e');
+      debugPrint('Gagal mendapatkan FCM token: $e');
     }
   }
 
   Future<void> _loadUserIdFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    // final savedUserId = prefs.getString('_id');
     final savedUserId = prefs.getString('user_id');
     if (savedUserId != null) {
       setState(() => userId = savedUserId);
@@ -50,11 +53,15 @@ class _JadwalDialogState extends State<JadwalDialog> {
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(), // Modern: tidak bisa pilih tanggal lampau
+      firstDate: DateTime.now(),
       lastDate: DateTime(2030),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: Color(0xFF0C2D57)),
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF0C2D57),
+            onPrimary: Colors.white,
+            onSurface: Color(0xFF0C2D57),
+          ),
         ),
         child: child!,
       ),
@@ -68,7 +75,10 @@ class _JadwalDialogState extends State<JadwalDialog> {
       initialTime: selectedTime ?? TimeOfDay.now(),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: Color(0xFF0C2D57)),
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF0C2D57),
+            onSurface: Color(0xFF0C2D57),
+          ),
         ),
         child: child!,
       ),
@@ -78,12 +88,18 @@ class _JadwalDialogState extends State<JadwalDialog> {
 
   Future<void> _submitJadwal() async {
     if (selectedDate == null || selectedTime == null) {
-      Get.snackbar("Lengkapi Data", "Pilih tanggal dan waktu terlebih dahulu.",
-          backgroundColor: Colors.orange.shade100, colorText: Colors.orange.shade900);
+      Get.snackbar(
+        "Lengkapi Data", 
+        "Pilih tanggal dan waktu terlebih dahulu.",
+        backgroundColor: Colors.white,
+        colorText: const Color(0xFF0C2D57),
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
+    
     if (fcmToken == null || userId == null) {
-      Get.snackbar("Sistem Sibuk", "Gagal memproses ID Pengguna, coba sesaat lagi.");
+      Get.snackbar("Sistem Sibuk", "Gagal memproses data pengguna.");
       return;
     }
 
@@ -110,7 +126,7 @@ class _JadwalDialogState extends State<JadwalDialog> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         Get.back();
         Get.snackbar("Berhasil", "Pengingat latihan telah dijadwalkan.",
-            backgroundColor: Colors.green.shade100, colorText: Colors.green.shade900);
+            backgroundColor: Colors.green.shade600, colorText: Colors.white);
       } else {
         Get.snackbar("Gagal", "Kesalahan server: ${response.statusCode}");
       }
@@ -119,126 +135,179 @@ class _JadwalDialogState extends State<JadwalDialog> {
     }
   }
 
-  // --- UI MODERN ---
+  // --- UI MODERN & STABIL ---
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF0C2D57);
-    final tanggalText = selectedDate != null ? DateFormat('dd MMM yyyy').format(selectedDate!) : '';
-    final waktuText = selectedTime != null ? selectedTime!.format(context) : '';
+    const Color bgInput = Color(0xFFF8FAFC);
+    
+    final tanggalDisplay = selectedDate != null 
+        ? DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(selectedDate!) 
+        : 'Pilih Tanggal';
+    final waktuDisplay = selectedTime != null ? selectedTime!.format(context) : 'Atur Jam';
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Set Pengingat",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: primaryColor),
-                ),
-                IconButton(
-                  onPressed: () => Get.back(),
-                  icon: const Icon(Icons.close, color: Colors.grey),
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Tentukan kapan Anda ingin diingatkan untuk melakukan latihan rutin.",
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 24),
-            
-            // Input Tanggal
-            _buildInputField(
-              label: "Pilih Tanggal",
-              controller: TextEditingController(text: tanggalText),
-              icon: Icons.calendar_month_rounded,
-              onTap: _pickDate,
-            ),
-            const SizedBox(height: 16),
-            
-            // Input Waktu
-            _buildInputField(
-              label: "Atur Jam",
-              controller: TextEditingController(text: waktuText),
-              icon: Icons.access_time_filled_rounded,
-              onTap: _pickTime,
-            ),
-            const SizedBox(height: 16),
-            
-            // Input Pesan
-            TextField(
-              controller: _pesanController,
-              maxLines: 2,
-              decoration: InputDecoration(
-                labelText: "Pesan Pengingat",
-                labelStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                alignLabelWithHint: true,
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                hintText: "Contoh: Ayo latihan punggung!",
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Tombol Submit
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _submitJadwal,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: const Text("Simpan Jadwal", style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            )
           ],
+        ),
+        // Fix: Material widget sebagai pembungkus utama konten dalam Dialog
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.notifications_active_rounded, color: primaryColor, size: 28),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Center(
+                    child: Text(
+                      "Set Pengingat",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  _buildLabel("Kapan Anda akan berlatih?"),
+                  _buildActionTile(
+                    text: tanggalDisplay,
+                    icon: Icons.calendar_today_rounded,
+                    isSelected: selectedDate != null,
+                    onTap: _pickDate,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionTile(
+                    text: waktuDisplay,
+                    icon: Icons.access_time_filled_rounded,
+                    isSelected: selectedTime != null,
+                    onTap: _pickTime,
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  _buildLabel("Pesan Pengingat"),
+                  TextField(
+                    controller: _pesanController,
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: "Contoh: Ayo semangat latihan!",
+                      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+                      filled: true,
+                      fillColor: bgInput,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 28),
+                  
+                  // Tombol Aksi
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Get.back(),
+                          child: Text("Batal", style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _submitJadwal,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: const Text("Simpan", style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInputField({
-    required String label,
-    required TextEditingController controller,
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+      ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required String text,
     required IconData icon,
+    required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return TextFormField(
-      readOnly: true,
+    const Color primaryColor = Color(0xFF0C2D57);
+    return InkWell(
       onTap: onTap,
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-        prefixIcon: Icon(icon, color: const Color(0xFF0C2D57), size: 20),
-        filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryColor.withOpacity(0.05) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          border: Border.all(
+            color: isSelected ? primaryColor.withOpacity(0.2) : const Color(0xFFF1F5F9),
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFF1F5F9), width: 1),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? primaryColor : Colors.grey[400], size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: isSelected ? primaryColor : Colors.grey[500],
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey[300], size: 18),
+          ],
         ),
       ),
     );
