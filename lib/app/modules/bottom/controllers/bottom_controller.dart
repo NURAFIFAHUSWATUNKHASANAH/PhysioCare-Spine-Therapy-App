@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_storage/get_storage.dart';
 
 class BottomController extends GetxController {
 
@@ -11,8 +11,8 @@ class BottomController extends GetxController {
   void onInit() async {
     super.onInit();
 
-    final prefs = await SharedPreferences.getInstance();
-    role.value = prefs.getString("user_role") ?? "";
+final box = GetStorage();
+role.value = box.read("user_role") ?? "";
 
     final arg = Get.arguments;
     if (arg != null && arg is int && arg >= 0 && arg < 3) {

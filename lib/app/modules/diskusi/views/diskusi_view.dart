@@ -6,6 +6,48 @@ import '../controllers/diskusi_controller.dart';
 import '../models/post_model.dart';
 import 'komentar_view.dart';
 
+String formatTanggal(String isoDate) {
+  try {
+    final date = DateTime.parse(isoDate).toLocal();
+    final now = DateTime.now();
+
+    final diff = now.difference(date);
+
+    if (diff.inSeconds < 60) {
+      return "Baru saja";
+    } else if (diff.inMinutes < 60) {
+      return "${diff.inMinutes} menit lalu";
+    } else if (diff.inHours < 24) {
+      return "${diff.inHours} jam lalu";
+    } else if (diff.inDays < 7) {
+      return "${diff.inDays} hari lalu";
+    } else {
+      return "${date.day} ${_bulanIndo(date.month)} ${date.year}";
+    }
+  } catch (e) {
+    return "";
+  }
+}
+
+String _bulanIndo(int bulan) {
+  const namaBulan = [
+    "",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des"
+  ];
+  return namaBulan[bulan];
+}
+
 class DiskusiView extends StatelessWidget {
   DiskusiView({Key? key}) : super(key: key);
 
@@ -315,7 +357,10 @@ class DiskusiView extends StatelessWidget {
             ),
             title: Text(post.user,
                 style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text("Baru saja", style: TextStyle(fontSize: 11)),
+            subtitle: Text(
+              formatTanggal(post.tanggal),
+              style: const TextStyle(fontSize: 11),
+            ),
             trailing: post.userId == controller.userId.value
                 ? PopupMenuButton(
                     itemBuilder: (context) => [
@@ -377,7 +422,9 @@ class DiskusiView extends StatelessWidget {
             child: Row(
               children: [
                 _buildActionBtn(
-                  icon: Icons.favorite_rounded,
+                  icon: post.likedBy.contains(controller.userId.value)
+                      ? Icons.favorite
+                      : Icons.favorite_border,
                   label: post.likes.toString(),
                   color: Colors.pink,
                   onTap: () => controller.likePost(post.id),

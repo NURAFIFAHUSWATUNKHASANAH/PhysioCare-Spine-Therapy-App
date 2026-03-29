@@ -26,7 +26,9 @@ class Post {
   final String content;
   final String? image;
   final int likes;
+  final List likedBy;
   final List<Comment> comments;
+  final String tanggal;
 
   Post({
     required this.id,
@@ -36,7 +38,9 @@ class Post {
     required this.content,
     this.image,
     required this.likes,
+    required this.likedBy,
     required this.comments,
+    required this.tanggal,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -59,12 +63,14 @@ class Post {
       image: json["image"],
 
       likes: json["likes"] ?? 0,
+      likedBy: json["liked_by"] ?? [],
 
       comments: json["comments"] != null
           ? (json["comments"] as List)
               .map((e) => Comment.fromJson(e))
               .toList()
           : [],
+      tanggal: json["tanggal"] ?? "",
     );
   }
 }

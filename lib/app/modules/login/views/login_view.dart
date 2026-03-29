@@ -20,7 +20,7 @@ class LoginView extends GetView<LoginController> {
               backgroundColor: const Color(0xFF0C2D57).withOpacity(0.05),
             ),
           ),
-          
+
           Center(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -66,23 +66,24 @@ class LoginView extends GetView<LoginController> {
                       _buildLabel("Kata Sandi"),
                       const SizedBox(height: 8),
                       Obx(() => _buildTextField(
-                        onChanged: (value) => controller.password.value = value,
-                        hint: "••••••••",
-                        icon: Icons.lock_outline_rounded,
-                        isPassword: true,
-                        obscureText: controller.isPasswordHidden.value,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            controller.isPasswordHidden.value
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: Colors.grey,
-                            size: 20,
-                          ),
-                          onPressed: controller.togglePasswordVisibility,
-                        ),
-                      )),
-                      
+                            onChanged: (value) =>
+                                controller.password.value = value,
+                            hint: "••••••••",
+                            icon: Icons.lock_outline_rounded,
+                            isPassword: true,
+                            obscureText: controller.isPasswordHidden.value,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                controller.isPasswordHidden.value
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
+                              onPressed: controller.togglePasswordVisibility,
+                            ),
+                          )),
+
                       // Lupa Password
                       Align(
                         alignment: Alignment.centerRight,
@@ -105,12 +106,12 @@ class LoginView extends GetView<LoginController> {
                         label: "Masuk",
                       ),
                       const SizedBox(height: 16),
-                      
-                      _buildGoogleButton(
-                        onPressed: controller.loginWithGoogle,
-                      ),
-                      
-                      const SizedBox(height: 32),
+
+                      // _buildGoogleButton(
+                      //   onPressed: controller.loginWithGoogle,
+                      // ),
+
+                      // const SizedBox(height: 32),
 
                       // 5. Register Link
                       Center(
@@ -119,7 +120,8 @@ class LoginView extends GetView<LoginController> {
                           child: RichText(
                             text: TextSpan(
                               text: "Belum memiliki akun? ",
-                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                              style: TextStyle(
+                                  color: Colors.grey[600], fontSize: 14),
                               children: const [
                                 TextSpan(
                                   text: "Daftar Sekarang",
@@ -205,7 +207,8 @@ class LoginView extends GetView<LoginController> {
     );
   }
 
-  Widget _buildPrimaryButton({required VoidCallback onPressed, required String label}) {
+  Widget _buildPrimaryButton(
+      {required VoidCallback onPressed, required String label}) {
     return Container(
       width: double.infinity,
       height: 56,
@@ -223,12 +226,14 @@ class LoginView extends GetView<LoginController> {
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0C2D57),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(
+              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
     );
@@ -243,11 +248,13 @@ class LoginView extends GetView<LoginController> {
         icon: Image.asset('assets/google_logo.png', height: 22),
         label: const Text(
           "Masuk dengan Google",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 15),
+          style: TextStyle(
+              color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 15),
         ),
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: Colors.grey.shade200),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           backgroundColor: Colors.white,
         ),
       ),

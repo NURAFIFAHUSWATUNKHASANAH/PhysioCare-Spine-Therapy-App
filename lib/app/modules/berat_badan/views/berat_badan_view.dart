@@ -23,8 +23,7 @@ class BeratBadanView extends GetView<BeratBadanController> {
         ? Get.find<BeratBadanController>()
         : Get.put(BeratBadanController());
 
-    final TextEditingController beratInputController =
-        TextEditingController();
+    final TextEditingController beratInputController = TextEditingController();
 
     const Color primaryColor = Color(0xFF0C2D57);
     const Color accentColor = Color(0xFF2196F3);
@@ -46,9 +45,7 @@ class BeratBadanView extends GetView<BeratBadanController> {
         title: const Text(
           "Pantau Berat Badan",
           style: TextStyle(
-              color: primaryColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 18),
+              color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -101,8 +98,7 @@ class BeratBadanView extends GetView<BeratBadanController> {
                     const Spacer(),
                     Text(
                       "${controller.riwayat.length} Data",
-                      style:
-                          TextStyle(color: Colors.grey[500], fontSize: 12),
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
                     ),
                   ],
                 ),
@@ -117,7 +113,11 @@ class BeratBadanView extends GetView<BeratBadanController> {
                   (context, index) {
                     final item = controller.riwayat[index];
                     return _buildHistoryItem(
-                        item, accentColor, primaryColor);
+                      item,
+                      accentColor,
+                      primaryColor,
+                      controller,
+                    );
                   },
                   childCount: controller.riwayat.length,
                 ),
@@ -167,7 +167,7 @@ class BeratBadanView extends GetView<BeratBadanController> {
                     color: Colors.white12,
                     borderRadius: BorderRadius.circular(10)),
                 child: Text(
-                  "${controller.beratTerakhir.value} kg",
+                  "${controller.formatBerat(controller.beratTerakhir.value)} kg",
                   style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -188,11 +188,8 @@ class BeratBadanView extends GetView<BeratBadanController> {
     );
   }
 
-  Widget _buildInputSection(
-      TextEditingController input,
-      Color accent,
-      Color primary,
-      BeratBadanController controller) {
+  Widget _buildInputSection(TextEditingController input, Color accent,
+      Color primary, BeratBadanController controller) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Row(
@@ -204,14 +201,13 @@ class BeratBadanView extends GetView<BeratBadanController> {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10)
+                      color: Colors.black.withOpacity(0.04), blurRadius: 10)
                 ],
               ),
               child: TextField(
                 controller: input,
-                keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   hintText: "Tambah berat baru (kg)...",
                   prefixIcon:
@@ -245,8 +241,8 @@ class BeratBadanView extends GetView<BeratBadanController> {
     );
   }
 
-  Widget _buildHistoryItem(
-      dynamic item, Color accent, Color primary) {
+  Widget _buildHistoryItem(dynamic item, Color accent, Color primary,
+      BeratBadanController controller) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -255,8 +251,79 @@ class BeratBadanView extends GetView<BeratBadanController> {
       ),
       child: ListTile(
         leading: Icon(Icons.scale_rounded, color: accent),
-        title: Text("${item['berat_badan']} kg"),
+        title: Text("${controller.formatBerat(item['berat_badan'])} kg"),
         subtitle: Text("${item['tanggal']}"),
+        trailing: PopupMenuButton<String>(
+  icon: const Icon(Icons.more_vert),
+  onSelected: (value) {
+    if (value == 'edit') {
+      final TextEditingController editController =
+          TextEditingController(
+        text: controller.formatBerat(item['berat_badan']),
+      );
+
+      Get.defaultDialog(
+        title: "Edit Berat",
+        content: TextField(controller: editController),
+        textConfirm: "Simpan",
+        textCancel: "Batal",
+        onConfirm: () {
+          final newBerat = double.tryParse(editController.text);
+          if (newBerat != null) {
+            final id = item['_id'];
+
+            if (id != null && id.toString().isNotEmpty) {
+              controller.updateBeratBadan(id.toString(), newBerat);
+            }
+            Get.back();
+          }
+        },
+      );
+    }
+
+    if (value == 'delete') {
+      Get.defaultDialog(
+        title: "Hapus Data?",
+        middleText: "Yakin mau hapus data ini?",
+        textConfirm: "Hapus",
+        textCancel: "Batal",
+        onConfirm: () {
+          final id = item['_id'];
+
+          if (id == null || id.toString().isEmpty) {
+            print("❌ ID kosong, tidak bisa delete");
+            return;
+          }
+
+          controller.deleteBeratBadan(id.toString());
+          Get.back();
+        },
+      );
+    }
+  },
+  itemBuilder: (context) => [
+    const PopupMenuItem(
+      value: 'edit',
+      child: Row(
+        children: [
+          Icon(Icons.edit, color: Colors.orange),
+          SizedBox(width: 8),
+          Text("Edit"),
+        ],
+      ),
+    ),
+    const PopupMenuItem(
+      value: 'delete',
+      child: Row(
+        children: [
+          Icon(Icons.delete, color: Colors.red),
+          SizedBox(width: 8),
+          Text("Hapus"),
+        ],
+      ),
+    ),
+  ],
+),
       ),
     );
   }
@@ -269,8 +336,7 @@ class BeratBadanView extends GetView<BeratBadanController> {
     }
 
     var rawData = controller.riwayat.take(7).toList();
-    List<Map<String, dynamic>> sorted =
-        List.from(rawData.reversed);
+    List<Map<String, dynamic>> sorted = List.from(rawData.reversed);
 
     return LineChart(
       LineChartData(
@@ -279,11 +345,8 @@ class BeratBadanView extends GetView<BeratBadanController> {
         lineBarsData: [
           LineChartBarData(
             spots: sorted.asMap().entries.map((e) {
-              return FlSpot(
-                  e.key.toDouble(),
-                  double.tryParse(
-                          e.value['berat_badan'].toString()) ??
-                      0);
+              return FlSpot(e.key.toDouble(),
+                  double.tryParse(e.value['berat_badan'].toString()) ?? 0);
             }).toList(),
             isCurved: true,
             color: Colors.white,

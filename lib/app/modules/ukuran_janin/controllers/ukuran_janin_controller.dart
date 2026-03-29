@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:get_storage/get_storage.dart';
 import 'package:pyhsiocare/config/api_config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class UkuranJaninController extends GetxController {
+  final box = GetStorage();
+
   var mingguUser = 0.obs;
 
   var buah = "".obs;
@@ -13,8 +15,7 @@ class UkuranJaninController extends GetxController {
   var deskripsi = "".obs;
 
   var selectedWeek = 0.obs;
-
-  var role = "".obs; // role user
+  var role = "".obs;
 
   final Map<int, Map<String, dynamic>> perkembanganJanin = {
     8: {"buah":"Raspberry","panjang":"1.6 cm","berat":"4 g","desc":"Organ vital mulai terbentuk"},
@@ -35,14 +36,14 @@ class UkuranJaninController extends GetxController {
   }
 
   Future<void> fetchUsiaKehamilan() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("auth_token");
-    role.value = prefs.getString("user_role") ?? "ibu";
+    final token = box.read("auth_token");
+    role.value = box.read("user_role") ?? "ibu";
 
-    // Pilih endpoint sesuai role
+    if (token == null) return;
+
     final url = role.value == "pendamping"
-        ? ApiConfig.pregnancyDashboardPasanganUrl // /pregnancy/dashboard/pasangan
-        : ApiConfig.pregnancyDashboardUrl;        // /pregnancy/dashboard
+        ? ApiConfig.pregnancyDashboardPasanganUrl
+        : ApiConfig.pregnancyDashboardUrl;
 
     try {
       final response = await http.get(
@@ -50,17 +51,29 @@ class UkuranJaninController extends GetxController {
         headers: {"Authorization": "Bearer $token"},
       );
 
+      /// 🔐 HANDLE TOKEN EXPIRED
+      if (response.statusCode == 401) {
+        final body = jsonDecode(response.body);
+
+        if (body["msg"] == "Token has expired") {
+          print("🔐 Token expired → logout");
+
+          box.erase();
+          Get.offAllNamed('/login');
+          return;
+        }
+      }
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        // Cek apakah data ada
         if (data["usia_kehamilan_minggu"] != null) {
           mingguUser.value = data["usia_kehamilan_minggu"];
+
           int nearestWeek = getNearestWeek(mingguUser.value);
           selectedWeek.value = nearestWeek;
           setPerkembangan(nearestWeek);
         } else {
-          // Data kosong
           mingguUser.value = 0;
           buah.value = "-";
           panjang.value = "-";
@@ -69,7 +82,8 @@ class UkuranJaninController extends GetxController {
         }
 
       } else {
-        print("Error fetch kehamilan: ${response.body}");
+        print("❌ Error fetch kehamilan: ${response.body}");
+
         mingguUser.value = 0;
         buah.value = "-";
         panjang.value = "-";
@@ -78,7 +92,8 @@ class UkuranJaninController extends GetxController {
       }
 
     } catch (e) {
-      print("Exception fetch kehamilan: $e");
+      print("❌ Exception: $e");
+
       mingguUser.value = 0;
       buah.value = "-";
       panjang.value = "-";

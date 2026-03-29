@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:pyhsiocare/app/modules/histori/controllers/histori_controller.dart';
 import 'package:pyhsiocare/app/data/services/auth_services.dart';
 import 'package:pyhsiocare/app/modules/profil/controllers/profil_controller.dart';
 import 'package:pyhsiocare/config/api_config.dart';
@@ -16,6 +17,7 @@ class LoginController extends GetxController {
   var isPasswordHidden = true.obs;
 
   final AuthService _authService;
+  final box = GetStorage(); // ✅ FIX
 
   LoginController({required AuthService authService})
       : _authService = authService;
@@ -27,6 +29,9 @@ class LoginController extends GetxController {
     isPasswordHidden.value = !isPasswordHidden.value;
   }
 
+  /// =========================
+  /// LOGIN MANUAL
+  /// =========================
   Future<void> login() async {
     if (email.value.isEmpty || password.value.isEmpty) {
       Get.snackbar("Error", "Email dan Password harus diisi!");
@@ -52,29 +57,29 @@ class LoginController extends GetxController {
         print("Token JWT: $token");
         print("ROLE USER: $role");
 
-        final prefs = await SharedPreferences.getInstance();
+        /// ✅ SIMPAN KE GETSTORAGE (FIX)
+        box.write('auth_token', token);
+        box.write('user_id', userData['_id']);
+        box.write('user_nama', userData['nama']);
+        box.write('user_email', userData['email']);
+        box.write('user_role', role);
+        box.write('login_method', 'manual');
 
-        await prefs.setString('auth_token', token);
-        await prefs.setString('user_id', userData['_id']);
-        await prefs.setString('user_nama', userData['nama']);
-        await prefs.setString('user_email', userData['email']);
-        await prefs.setString('user_role', role);
+        if (userData['partner_id'] != null) {
+          box.write('partner_id', userData['partner_id']);
+        }
+
+        if (userData['foto'] != null) {
+          box.write('user_foto', userData['foto']);
+        }
+
+        /// 🔥 DEBUG (opsional tapi penting)
+        print("TOKEN TERSIMPAN: ${box.read('auth_token')}");
+        print("USER ID TERSIMPAN: ${box.read('user_id')}");
+
         await sendFcmToken(token);
 
-        await Future.delayed(Duration(milliseconds: 300));
-        
-        /// SIMPAN PARTNER ID
-        if (userData['partner_id'] != null) {
-          await prefs.setString('partner_id', userData['partner_id']);
-
-          print("PARTNER ID: ${userData['partner_id']}");
-        }
-        if (userData['foto'] != null) {
-          await prefs.setString('user_foto', userData['foto']);
-        }
-
-        await prefs.setString('login_method', 'manual');
-
+        /// INIT PROFILE
         final profileController = Get.put(ProfileController());
 
         profileController.userId.value = userData['_id'];
@@ -85,16 +90,19 @@ class LoginController extends GetxController {
 
         Get.snackbar("Berhasil", "Selamat datang, ${userData['nama']}!");
 
-        /// =========================
-        /// REDIRECT BERDASARKAN ROLE
-        /// =========================
+        /// 🔥 TRIGGER HISTORI (BIAR LANGSUNG KELOAD)
+        if (Get.isRegistered<HistoriController>()) {
+          Get.find<HistoriController>().loadUserData();
+        } else {
+          Get.put(HistoriController()).loadUserData();
+        }
+
+        /// REDIRECT
         final isValidated = userData['is_validated'] ?? false;
 
-        /// Jika ibu hamil belum validasi
         if (role == "ibu" && !isValidated) {
           Get.offNamed(Routes.VALIDASI_KEHAMILAN);
         } else {
-          /// Semua role masuk ke dashboard utama
           Get.offNamed(Routes.BOTTOM);
         }
       } else {
@@ -108,21 +116,26 @@ class LoginController extends GetxController {
     }
   }
 
+  /// =========================
+  /// LOGIN GOOGLE
+  /// =========================
   Future<void> loginWithGoogle() async {
     final result = await _authService.loginWithGoogle();
 
     if (result['success']) {
       final userData = result['user'];
       final token = result['token'];
-      // Print token ke console log Flutter
+
       print("Token JWT: $token");
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
-      await prefs.setString('user_id', userData['_id']);
-      await prefs.setString('user_nama_google', userData['nama']);
-      await prefs.setString('user_email_google', userData['email']);
-      await prefs.setString('login_method', 'google');
+      /// ✅ SIMPAN KE GETSTORAGE (FIX)
+      box.write('auth_token', token);
+      box.write('user_id', userData['_id']);
+      box.write('user_nama', userData['nama']);
+      box.write('user_email', userData['email']);
+      box.write('user_foto', userData['foto'] ?? '');
+      box.write('login_method', 'google');
+
       await sendFcmToken(token);
 
       final profileController = Get.put(ProfileController());
@@ -131,6 +144,13 @@ class LoginController extends GetxController {
       profileController.foto.value = userData['foto'] ?? '';
       profileController.loginMethod.value = 'google';
 
+      /// 🔥 TRIGGER HISTORI (FIX)
+      if (Get.isRegistered<HistoriController>()) {
+        Get.find<HistoriController>().loadUserData();
+      } else {
+        Get.put(HistoriController()).loadUserData();
+      }
+
       Get.snackbar("Berhasil", "Login dengan Google berhasil");
       Get.offNamed(Routes.BOTTOM);
     } else {
@@ -138,28 +158,27 @@ class LoginController extends GetxController {
     }
   }
 
+  /// =========================
+  /// SEND FCM TOKEN
+  /// =========================
   Future<void> sendFcmToken(String jwt) async {
-  try {
+    try {
+      String? token = await FirebaseMessaging.instance.getToken();
 
-    String? token = await FirebaseMessaging.instance.getToken();
+      print("FCM TOKEN: $token");
 
-    print("FCM TOKEN: $token");
+      if (token == null) return;
 
-    if (token == null) return;
-
-    await http.post(
-      Uri.parse("${ApiConfig.baseUrl}/save-fcm-token"),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $jwt"
-      },
-      body: jsonEncode({
-        "token": token
-      }),
-    );
-
-  } catch (e) {
-    print("Gagal kirim FCM token: $e");
+      await http.post(
+        Uri.parse("${ApiConfig.baseUrl}/save-fcm-token"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $jwt"
+        },
+        body: jsonEncode({"token": token}),
+      );
+    } catch (e) {
+      print("Gagal kirim FCM token: $e");
+    }
   }
-}
 }

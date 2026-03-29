@@ -3,19 +3,16 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:get/get.dart';
-import 'package:pyhsiocare/app/modules/senam/bindings/senam_binding.dart';
-import 'package:pyhsiocare/app/modules/senam/views/senam_view.dart';
+import 'package:get_storage/get_storage.dart';
 
 import '../services/pose_service.dart';
 import '../services/tflite_service.dart';
 
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:pyhsiocare/config/api_config.dart';
 import 'package:pyhsiocare/app/modules/histori/controllers/histori_controller.dart';
-import 'package:pyhsiocare/app/modules/home/controllers/home_controller.dart';
 
 class SenamAiController extends GetxController {
   CameraController? cameraController;
@@ -45,18 +42,25 @@ class SenamAiController extends GetxController {
 
   final labels = ["Bird Dog", "Cat Cow", "Child Pose", "Side Lying Leg Lift"];
 
+  /// ✅ STORAGE BARU
+  final box = GetStorage();
+
   @override
   void onInit() {
     super.onInit();
     initModel();
   }
 
-  /// Load model TFLite
+  /// ==============================
+  /// LOAD MODEL
+  /// ==============================
   Future initModel() async {
     await tfliteService.loadModel();
   }
 
-  /// Inisialisasi kamera
+  /// ==============================
+  /// INIT CAMERA
+  /// ==============================
   Future initCamera(CameraDescription camera) async {
     cameraController = CameraController(
       camera,
@@ -71,7 +75,9 @@ class SenamAiController extends GetxController {
     startPoseDetection();
   }
 
+  /// ==============================
   /// TIMER LATIHAN
+  /// ==============================
   void startTimer() {
     seconds.value = 60;
 
@@ -82,23 +88,24 @@ class SenamAiController extends GetxController {
         t.cancel();
         cameraController?.stopImageStream();
 
-        if (totalFrames.value > 0) {
-          accuracy.value = (correctFrames.value / totalFrames.value) * 100;
-        } else {
-          accuracy.value = 0;
-        }
+        accuracy.value = totalFrames.value > 0
+            ? (correctFrames.value / totalFrames.value) * 100
+            : 0;
 
         await simpanHistori(accuracy.value, targetPose);
 
         speak(
-            "Latihan selesai. Akurasi kamu ${accuracy.value.toStringAsFixed(1)} persen");
+          "Latihan selesai. Akurasi kamu ${accuracy.value.toStringAsFixed(1)} persen",
+        );
 
-        showResultDialog(); // default isManualStop = false
+        showResultDialog();
       }
     });
   }
 
-  /// Mulai pose detection
+  /// ==============================
+  /// POSE DETECTION
+  /// ==============================
   void startPoseDetection() {
     cameraController!.startImageStream((image) async {
       if (isProcessing) return;
@@ -110,13 +117,10 @@ class SenamAiController extends GetxController {
 
         if (pose != null) {
           final input = poseService.extractLandmarks(pose);
-
           final normalized = await poseService.normalize(input);
-
           final result = await tfliteService.predict(normalized);
 
           currentPose.value = labels[result];
-
           giveFeedback();
         }
       } catch (e) {
@@ -127,8 +131,9 @@ class SenamAiController extends GetxController {
     });
   }
 
-  /// Feedback benar / salah
-  /// Feedback benar / salah (hanya TTS, tanpa update UI)
+  /// ==============================
+  /// FEEDBACK GERAKAN
+  /// ==============================
   void giveFeedback() {
     totalFrames.value++;
 
@@ -138,20 +143,16 @@ class SenamAiController extends GetxController {
       correctFrames.value++;
     }
 
-    /// Cooldown TTS 3 detik supaya tidak spam
+    /// cooldown TTS 3 detik
     if (DateTime.now().difference(lastSpeak).inSeconds > 3) {
-      if (isCorrect) {
-        speak("Gerakan benar");
-      } else {
-        speak("Gerakan salah");
-      }
+      speak(isCorrect ? "Gerakan benar" : "Gerakan salah");
       lastSpeak = DateTime.now();
     }
-
-    /// Tidak perlu update feedback.value
   }
 
-  /// Text to Speech
+  /// ==============================
+  /// TEXT TO SPEECH
+  /// ==============================
   void speak(String text) async {
     await tts.setLanguage("id-ID");
     await tts.setSpeechRate(0.45);
@@ -160,13 +161,14 @@ class SenamAiController extends GetxController {
     await tts.speak(text);
   }
 
-  /// SIMPAN HISTORI LATIHAN
+  /// ==============================
+  /// SIMPAN HISTORI (FIXED)
+  /// ==============================
   Future<void> simpanHistori(double akurasi, String label) async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('user_id');
-    final token = prefs.getString('auth_token'); // ambil token JWT
+    final userId = box.read('user_id');
+    final token = box.read('auth_token');
 
-    if (userId == null || token == null || token.isEmpty) {
+    if (userId == null || token == null || token.toString().isEmpty) {
       Get.snackbar("Error", "User ID atau token tidak ditemukan");
       return;
     }
@@ -183,57 +185,58 @@ class SenamAiController extends GetxController {
         Uri.parse('${ApiConfig.historiUrl}'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token', // ✅ wajib
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode(body),
       );
 
       if (response.statusCode == 201) {
-        // Refresh histori
-        if (Get.isRegistered<HistoriController>()) {
-          await Get.find<HistoriController>().fetchHistory();
-        } else {
-          await Get.put(HistoriController()).fetchHistory();
-        }
-
-        // Update statistik Home
-        HomeController homeController;
-        if (Get.isRegistered<HomeController>()) {
-          homeController = Get.find<HomeController>();
-        } else {
-          homeController = Get.put(HomeController());
-        }
-        await homeController.getTotalLatihanDanWaktu();
+        /// ✅ 1 SUMBER HISTORI
+        final historiController = Get.find<HistoriController>();
+        await historiController.refreshHistory();
 
         Get.snackbar("Sukses", "Histori latihan tersimpan");
+
       } else if (response.statusCode == 401) {
-        Get.snackbar(
-            "Gagal", "Token kadaluarsa atau tidak valid, silakan login ulang");
+        /// 🔐 TOKEN EXPIRED
+        box.erase();
+        Get.offAllNamed('/login');
+
       } else {
-        Get.snackbar("Gagal", "Gagal menyimpan histori: ${response.body}");
+        Get.snackbar(
+          "Gagal",
+          "Gagal menyimpan histori: ${response.body}",
+        );
       }
+
     } catch (e) {
       Get.snackbar("Error", "Terjadi kesalahan: $e");
     }
   }
 
-  /// Dialog hasil latihan
+  /// ==============================
+  /// DIALOG HASIL
+  /// ==============================
   void showResultDialog({bool isManualStop = false}) {
     Get.dialog(
       AlertDialog(
-        title: Text(isManualStop ? "Latihan Dihentikan" : "Latihan Selesai"),
-        content: Obx(() => Text(
-              "Akurasi Gerakan: ${accuracy.value.toStringAsFixed(1)} %",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            )),
+        title: Text(
+          isManualStop ? "Latihan Dihentikan" : "Latihan Selesai",
+        ),
+        content: Obx(
+          () => Text(
+            "Akurasi Gerakan: ${accuracy.value.toStringAsFixed(1)} %",
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {
-              Get.back(); // tutup dialog
-              Get.back(); // kembali dari SenamAiView ke SenamView
+              Get.back(); // dialog
+              Get.back(); // halaman
             },
             child: const Text("Tutup"),
           ),
@@ -243,31 +246,33 @@ class SenamAiController extends GetxController {
     );
   }
 
+  /// ==============================
+  /// CLEANUP
+  /// ==============================
   @override
   void onClose() {
     cameraController?.dispose();
     timer?.cancel();
-
     super.onClose();
   }
 
-  /// Hentikan latihan sebelum waktunya habis
+  /// ==============================
+  /// STOP MANUAL
+  /// ==============================
   void stopExercise() async {
     timer?.cancel();
     await cameraController?.stopImageStream();
 
-    if (totalFrames.value > 0) {
-      accuracy.value = (correctFrames.value / totalFrames.value) * 100;
-    } else {
-      accuracy.value = 0;
-    }
+    accuracy.value = totalFrames.value > 0
+        ? (correctFrames.value / totalFrames.value) * 100
+        : 0;
 
     await simpanHistori(accuracy.value, targetPose);
 
     speak(
-        "Latihan dihentikan. Akurasi kamu ${accuracy.value.toStringAsFixed(1)} persen");
+      "Latihan dihentikan. Akurasi kamu ${accuracy.value.toStringAsFixed(1)} persen",
+    );
 
-    /// Panggil dialog dengan parameter manual
     showResultDialog(isManualStop: true);
   }
 }

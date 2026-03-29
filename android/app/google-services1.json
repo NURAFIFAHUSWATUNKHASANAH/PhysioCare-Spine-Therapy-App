@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1064206084145",
+    "project_id": "physiocare-affh2263",
+    "storage_bucket": "physiocare-affh2263.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1064206084145:android:00afa197b8ace3b9db8d10",
+        "android_client_info": {
+          "package_name": "com.physiocare.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx5KC8G7rTGLlKTNTgKi15huAtFvUOdxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

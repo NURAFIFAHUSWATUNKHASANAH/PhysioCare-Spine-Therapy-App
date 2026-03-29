@@ -4,10 +4,12 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:get_storage/get_storage.dart';
 import 'package:pyhsiocare/config/api_config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileController extends GetxController {
+
+  final box = GetStorage(); // ✅ FIX
 
   /// ===== STATE USER =====
   var userId = "".obs;
@@ -17,12 +19,11 @@ class ProfileController extends GetxController {
   var foto = "".obs;
   var image = Rx<File?>(null);
 
-  /// ===== IMAGE PICKER =====
   final ImagePicker _picker = ImagePicker();
   var isPicking = false.obs;
 
   /// =============================
-  /// INIT CONTROLLER
+  /// INIT
   /// =============================
   @override
   void onInit() {
@@ -31,32 +32,39 @@ class ProfileController extends GetxController {
   }
 
   /// =============================
-  /// LOAD USER DATA
+  /// LOAD USER DATA (SUPER CEPAT)
   /// =============================
   Future<void> loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
 
-    userId.value = prefs.getString('user_id') ?? '';
-    loginMethod.value = prefs.getString('login_method') ?? '';
+    userId.value = box.read('user_id') ?? '';
+    loginMethod.value = box.read('login_method') ?? '';
 
-    /// reset image preview supaya tidak ikut akun sebelumnya
+    // ✅ LANGSUNG TAMPIL TANPA NUNGGU API
+    namaC.value = box.read('user_nama') ?? '';
+    emailC.value = box.read('user_email') ?? '';
+    foto.value = box.read('user_foto') ?? '';
+
     image.value = null;
 
+    print("LOAD PROFILE:");
+    print("Nama: ${namaC.value}");
+    print("Email: ${emailC.value}");
+
+    /// optional: refresh dari server
     if (userId.value.isNotEmpty) {
-      await fetchUserProfile();
+      fetchUserProfile();
     }
   }
 
   /// =============================
   /// GET TOKEN
   /// =============================
-  Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+  String? getToken() {
+    return box.read('auth_token');
   }
 
   /// =============================
-  /// FETCH PROFILE
+  /// FETCH PROFILE (SYNC DENGAN SERVER)
   /// =============================
   Future<void> fetchUserProfile() async {
 
@@ -64,7 +72,7 @@ class ProfileController extends GetxController {
 
     try {
 
-      final token = await getToken();
+      final token = getToken();
       if (token == null) return;
 
       final response = await http.get(
@@ -82,9 +90,14 @@ class ProfileController extends GetxController {
         emailC.value = data['email'] ?? '';
         foto.value = data['foto'] ?? '';
 
+        /// ✅ UPDATE STORAGE BIAR SINKRON
+        box.write('user_nama', namaC.value);
+        box.write('user_email', emailC.value);
+        box.write('user_foto', foto.value);
+
       } else {
 
-        safeSnackbar("Error", "Gagal mengambil profil (${response.statusCode})");
+        safeSnackbar("Error", "Gagal mengambil profil");
 
       }
 
@@ -116,7 +129,6 @@ class ProfileController extends GetxController {
 
         File file = File(pickedFile.path);
 
-        /// preview langsung
         image.value = file;
 
         await uploadProfileImage(file);
@@ -134,7 +146,6 @@ class ProfileController extends GetxController {
     }
 
   }
-
   /// =============================
   /// UPLOAD PROFILE IMAGE
   /// =============================
@@ -142,7 +153,7 @@ class ProfileController extends GetxController {
 
     try {
 
-      final token = await getToken();
+      final token = getToken();
       if (token == null) return;
 
       var request = http.MultipartRequest(
@@ -153,10 +164,7 @@ class ProfileController extends GetxController {
       request.headers['Authorization'] = 'Bearer $token';
 
       request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          file.path,
-        ),
+        await http.MultipartFile.fromPath('file', file.path),
       );
 
       var response = await request.send();
@@ -169,7 +177,7 @@ class ProfileController extends GetxController {
 
       } else {
 
-        safeSnackbar("Error", "Upload gagal (${response.statusCode})");
+        safeSnackbar("Error", "Upload gagal");
 
       }
 
@@ -182,56 +190,34 @@ class ProfileController extends GetxController {
   }
 
   /// =============================
-  /// SNACKBAR AMAN
-  /// =============================
-  void safeSnackbar(String title, String message) {
-
-    if (Get.context != null) {
-
-      Get.snackbar(
-        title,
-        message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-
-    }
-
-  }
-
-  /// =============================
-  /// NAVIGASI
-  /// =============================
-  void editProfile() {
-    Get.toNamed('/edit-profil');
-  }
-
-  void showAbout() {
-    Get.toNamed('/tentang');
-  }
-
-  /// =============================
-  /// LOGOUT
+  /// LOGOUT (FIX TOTAL)
   /// =============================
   Future<void> logout() async {
 
-    final prefs = await SharedPreferences.getInstance();
-
-    /// reset semua state
     userId.value = '';
     namaC.value = '';
     emailC.value = '';
     foto.value = '';
     image.value = null;
 
-    /// hapus session
-    await prefs.clear();
+    /// ✅ bersihin semua storage
+    box.erase();
 
-    /// hapus semua controller
-    Get.deleteAll();
+    /// hapus controller
+    // Get.deleteAll();
 
-    /// kembali ke login
     Get.offAllNamed('/login');
-
   }
 
+  /// =============================
+  /// UTIL
+  /// =============================
+  void safeSnackbar(String title, String message) {
+    if (Get.context != null) {
+      Get.snackbar(title, message);
+    }
+  }
+
+  void editProfile() => Get.toNamed('/edit-profil');
+  void showAbout() => Get.toNamed('/tentang');
 }

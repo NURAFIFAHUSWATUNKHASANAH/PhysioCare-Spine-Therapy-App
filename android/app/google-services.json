@@ -12,7 +12,20 @@
           "package_name": "com.physiocare.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1064206084145-gn15b8adq1l1lb7c5q0vekbuiv1bho80.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.physiocare.app",
+            "certificate_hash": "08f6d1ff9a40a4cf9f59e1f332a1359d61c06d52"
+          }
+        },
+        {
+          "client_id": "1064206084145-p99gklq5mrol044bpim2p26mfl0r10kj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAx5KC8G7rTGLlKTNTgKi15huAtFvUOdxI"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1064206084145-p99gklq5mrol044bpim2p26mfl0r10kj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

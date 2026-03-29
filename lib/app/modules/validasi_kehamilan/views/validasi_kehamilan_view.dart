@@ -131,15 +131,6 @@ class ValidasiKehamilanView extends GetView<ValidasiKehamilanController> {
                 ],
               ),
 
-              const SizedBox(height: 20),
-              _buildInputLabel("Riwayat Penyakit"),
-              _buildCustomField(
-                hint: "Contoh: Diabetes, Asma, atau -",
-                icon: Icons.description_outlined,
-                fillColor: fieldFillColor,
-                onChanged: controller.setPenyakit,
-              ),
-
               const SizedBox(height: 48),
 
               // Professional Action Button

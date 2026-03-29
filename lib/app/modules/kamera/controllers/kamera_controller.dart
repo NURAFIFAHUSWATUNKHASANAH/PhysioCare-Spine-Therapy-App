@@ -323,7 +323,7 @@ void showResultDialog() {
         Get.find<HistoriController>().fetchHistory();
         Get.snackbar("Sukses", "Data histori berhasil disimpan");
         final HomeController homeController = Get.find<HomeController>();
-        await homeController.getTotalLatihanDanWaktu();
+        // await homeController.getTotalLatihanDanWaktu();
       } else {
         Get.snackbar("Gagal", "Gagal menyimpan histori");
       }

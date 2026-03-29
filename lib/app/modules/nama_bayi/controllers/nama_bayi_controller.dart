@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:pyhsiocare/config/api_config.dart';
 
@@ -17,6 +18,7 @@ class NamaBayiController extends GetxController {
   var isLoading = false.obs;
 
   var favorites = <Map<String, dynamic>>[].obs;
+  final box = GetStorage();
 
   /// ================================
   /// INIT
@@ -105,108 +107,88 @@ class NamaBayiController extends GetxController {
   /// SAVE FAVORITE
   /// ================================
 
-  Future<void> saveFavorite(String name, String meaning) async {
+Future<void> saveFavorite(String name, String meaning) async {
+  final token = box.read('auth_token');
 
-    try {
+  try {
+    await http.post(
+      Uri.parse(ApiConfig.babyNameFavoriteUrl),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token"
+      },
+      body: jsonEncode({
+        "name": name.trim(),
+        "meaning": meaning.trim(),
+        "category": category.value,
+        "gender": gender.value
+      }),
+    );
 
-      await http.post(
-        Uri.parse(ApiConfig.babyNameFavoriteUrl),
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: jsonEncode({
-          "name": name.trim(),
-          "meaning": meaning.trim(),
-          "category": category.value,
-          "gender": gender.value
-        }),
-      );
+    // 🔥 TAMBAH INI (biar langsung merah)
+    favorites.add({
+      "name": name,
+      "meaning": meaning,
+    });
 
-      await getFavorites();
+    Get.snackbar("Berhasil", "Disimpan ke favorit");
 
-      Get.snackbar(
-        "Berhasil",
-        "Nama bayi disimpan ke favorit",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+  } catch (e) {
+    Get.snackbar("Error", "Gagal simpan");
+  }
+}
 
-    } catch (e) {
 
-      Get.snackbar(
-        "Error",
-        "Gagal menyimpan favorit",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+Future<void> getFavorites() async {
+  final token = box.read('auth_token');
 
+  try {
+    final response = await http.get(
+      Uri.parse(ApiConfig.babyNameFavoriteUrl),
+      headers: {
+        "Authorization": "Bearer $token"
+      },
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data["status"] == "success") {
+      favorites.value =
+          List<Map<String, dynamic>>.from(data["data"]);
     }
 
+  } catch (e) {
+    Get.snackbar("Error", "Gagal ambil favorit");
   }
-
-  /// ================================
-  /// GET FAVORITE
-  /// ================================
-
-  Future<void> getFavorites() async {
-
-    try {
-
-      final response = await http.get(
-        Uri.parse(ApiConfig.babyNameFavoriteUrl),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (data["status"] == "success") {
-
-        favorites.value =
-            List<Map<String, dynamic>>.from(data["data"]);
-
-      }
-
-    } catch (e) {
-
-      Get.snackbar(
-        "Error",
-        "Gagal mengambil daftar favorit",
-        snackPosition: SnackPosition.BOTTOM,
-      );
-
-    }
-
-  }
+}
 
   /// ================================
   /// DELETE FAVORITE
   /// ================================
 
-  Future<void> removeFavorite(String name) async {
+Future<void> removeFavorite(String name) async {
+  final token = box.read('auth_token');
 
-    try {
+  try {
+    final encodedName = Uri.encodeComponent(name);
 
-      final encodedName = Uri.encodeComponent(name);
+    await http.delete(
+      Uri.parse("${ApiConfig.babyNameFavoriteUrl}/$encodedName"),
+      headers: {
+        "Authorization": "Bearer $token"
+      },
+    );
 
-      await http.delete(
-        Uri.parse("${ApiConfig.babyNameFavoriteUrl}/$encodedName"),
-      );
+    // 🔥 TAMBAH INI (biar langsung hilang merahnya)
+    favorites.removeWhere((e) => e["name"] == name);
 
-      favorites.removeWhere((e) => e["name"] == name);
+    Get.snackbar("Berhasil", "Dihapus dari favorit");
 
-      Get.snackbar(
-        "Berhasil",
-        "Nama dihapus dari favorit",
-        snackPosition: SnackPosition.BOTTOM,
-      );
-
-    } catch (e) {
-
-      Get.snackbar(
-        "Error",
-        "Gagal menghapus favorit",
-        snackPosition: SnackPosition.BOTTOM,
-      );
-
-    }
-
+  } catch (e) {
+    Get.snackbar("Error", "Gagal hapus");
   }
-
+}
+bool isFavorite(String name) {
+  return favorites.any((e) => e["name"] == name);
+}
 }

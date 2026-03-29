@@ -297,11 +297,16 @@ class NamaBayiView extends GetView<NamaBayiController> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: names.length,
-        itemBuilder: (context, index) => _buildModernNameCard(
-          names[index]["name"]!,
-          names[index]["meaning"]!,
-          isFavorite: false,
-        ),
+itemBuilder: (context, index) {
+  final name = names[index]["name"]!;
+  final meaning = names[index]["meaning"]!;
+
+  return _buildModernNameCard(
+    name,
+    meaning,
+    isFavorite: controller.isFavorite(name), // 🔥 DINAMIS
+  );
+},
       );
     });
   }
@@ -370,25 +375,24 @@ class NamaBayiView extends GetView<NamaBayiController> {
   }
 
   Widget _buildFavoriteToggle(String name, String meaning, bool isFavorite) {
-    return InkWell(
-      onTap: () {
-        if (isFavorite) {
-          controller.removeFavorite(name);
-        } else {
-          controller.saveFavorite(name, meaning);
-          controller.getFavorites();
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        child: Icon(
-          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          color: isFavorite ? accentPink : Colors.grey[300], // Icon favorit jadi pink
-          size: 28,
-        ),
+  return InkWell(
+    onTap: () async {
+      if (isFavorite) {
+        await controller.removeFavorite(name);
+      } else {
+        await controller.saveFavorite(name, meaning);
+      }
+    },
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      child: Icon(
+        isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+        color: isFavorite ? accentPink : Colors.grey[300],
+        size: 28,
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFavoriteTab() {
     return Obx(() {

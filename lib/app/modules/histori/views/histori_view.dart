@@ -44,9 +44,6 @@ class HistoriView extends GetView<HistoriController> {
 
               const SizedBox(height: 25),
 
-              /// SUMMARY CARD
-              _summarySection(primary),
-
               const SizedBox(height: 30),
 
               const Text(
@@ -161,31 +158,6 @@ class HistoriView extends GetView<HistoriController> {
           label,
           style: const TextStyle(color: Colors.white54, fontSize: 10),
         )
-      ],
-    );
-  }
-
-  /// SUMMARY CARD
-  Widget _summarySection(Color primary) {
-    return Row(
-      children: [
-        Expanded(
-          child: _infoCard(
-            "Total Latihan",
-            controller.historiList.length.toString(),
-            Icons.history,
-            primary,
-          ),
-        ),
-        const SizedBox(width: 15),
-        Expanded(
-          child: _infoCard(
-            "Rata-rata",
-            _avgAccuracy(),
-            Icons.analytics,
-            Colors.blue,
-          ),
-        ),
       ],
     );
   }

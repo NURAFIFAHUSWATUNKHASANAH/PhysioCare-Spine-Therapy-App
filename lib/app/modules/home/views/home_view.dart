@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:pyhsiocare/app/modules/artikel/views/article_detail_view.dart';
@@ -14,7 +15,6 @@ import 'package:pyhsiocare/app/modules/nama_bayi/bindings/nama_bayi_binding.dart
 import 'package:pyhsiocare/app/modules/nama_bayi/views/nama_bayi_view.dart';
 import 'package:pyhsiocare/app/routes/app_pages.dart';
 import 'package:pyhsiocare/config/api_config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'package:pyhsiocare/app/modules/jadwal/controllers/jadwal_controller.dart';
 import 'package:pyhsiocare/app/modules/keluhan/controllers/keluhan_controller.dart';
@@ -29,8 +29,8 @@ class HomeView extends GetView<HomeController> {
   final RxString role = "".obs;
 
   Future<void> loadRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    role.value = prefs.getString("user_role") ?? "";
+    final box = GetStorage();
+    role.value = box.read("user_role") ?? "";
   }
 
   @override
@@ -88,27 +88,33 @@ class HomeView extends GetView<HomeController> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Halo, ${getGreeting()}",
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 14,
-                                letterSpacing: 0.5,
+                        Expanded(
+                          // ⚡ Ini kunci
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Halo, ${getGreeting()}",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 14,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Obx(() => Text(
-                                  profileController.namaC.value,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                )),
-                          ],
+                              const SizedBox(height: 4),
+                              Obx(() => Text(
+                                    profileController.namaC.value,
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow
+                                        .ellipsis, // 🔹 agar tidak overflow
+                                    maxLines: 1,
+                                  )),
+                            ],
+                          ),
                         ),
                         _buildProfileAvatar(Colors.white),
                       ],
@@ -281,13 +287,11 @@ class HomeView extends GetView<HomeController> {
                             icon: Icons.monitor_weight,
                             color: const Color(0xFF4CAF50),
                             onTap: () => Get.toNamed(Routes.BERAT_BADAN)));
-                        menus.add(
-                          _buildGridMenu(
+                        menus.add(_buildGridMenu(
                             label: "History",
                             icon: Icons.history_rounded,
                             color: const Color(0xFF607D8B),
-                            onTap: () => Get.toNamed(Routes.HISTORI))
-                        );
+                            onTap: () => Get.toNamed(Routes.HISTORI)));
                       }
 
                       menus.addAll([
@@ -462,17 +466,31 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildProfileAvatar(Color color) {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
+    final profileController = Get.find<ProfileController>();
+
+    return Obx(() {
+      final foto = profileController.foto.value;
+
+      return Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: color.withOpacity(0.5), width: 1.5)),
-      child: const CircleAvatar(
-        radius: 22,
-        backgroundColor: Colors.white24,
-        child: Icon(Icons.person_rounded, color: Colors.white, size: 26),
-      ),
-    );
+          border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+        ),
+        child: CircleAvatar(
+          radius: 22,
+          backgroundColor: Colors.white24,
+          backgroundImage: (foto.isNotEmpty) ? NetworkImage(foto) : null,
+          child: (foto.isEmpty)
+              ? const Icon(
+                  Icons.person_rounded,
+                  color: Colors.white,
+                  size: 26,
+                )
+              : null,
+        ),
+      );
+    });
   }
 
   Widget _buildModernArticleCard(artikel) {
@@ -523,8 +541,8 @@ class HomeView extends GetView<HomeController> {
   }
 
   Future<void> _updateTokenFCM() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('_id');
+    final box = GetStorage();
+    final userId = box.read('user_id');
     if (userId == null || userId.isEmpty) return;
     try {
       final token = await FirebaseMessaging.instance.getToken();
@@ -663,8 +681,8 @@ class HomeView extends GetView<HomeController> {
   }
 
   Future<bool> _updateKehamilan(String hpht) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final box = GetStorage();
+    final token = box.read('auth_token');
 
     try {
       final response = await http.put(

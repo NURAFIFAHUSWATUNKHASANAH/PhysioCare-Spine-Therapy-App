@@ -1,19 +1,16 @@
 import 'dart:convert';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:get_storage/get_storage.dart';
 import 'package:pyhsiocare/config/api_config.dart';
 
 class HistoriController extends GetxController {
 
-  /// ==============================
-  /// STATE
-  /// ==============================
+  final box = GetStorage();
 
   var historiList = <Map<String, dynamic>>[].obs;
   var isLoading = false.obs;
 
-  var role = "".obs;
   var userId = "".obs;
 
   var totalLatihan = 0.obs;
@@ -22,7 +19,6 @@ class HistoriController extends GetxController {
   /// ==============================
   /// INIT
   /// ==============================
-
   @override
   void onInit() {
     super.onInit();
@@ -32,35 +28,31 @@ class HistoriController extends GetxController {
   /// ==============================
   /// LOAD USER DATA
   /// ==============================
-Future<void> loadUserData() async {
+  Future<void> loadUserData() async {
 
-  final prefs = await SharedPreferences.getInstance();
+    final token = box.read('auth_token');
+    userId.value = box.read('user_id') ?? "";
 
-  role.value = prefs.getString("user_role") ?? "";
-  userId.value = prefs.getString("user_id") ?? "";
+    // ❗ STOP kalau belum login
+    if (token == null || userId.value.isEmpty) {
+      print("❌ Belum login, skip fetch histori");
+      return;
+    }
 
-  final token = prefs.getString("auth_token");
-
-  if (userId.value.isEmpty || token == null) {
-    print("❌ Token atau UserID kosong");
-    return;
+    await fetchHistory();
+    await fetchStats();
   }
 
-  await fetchHistory();
-  await fetchStats();
-}
   /// ==============================
   /// FETCH HISTORY
   /// ==============================
-
   Future<void> fetchHistory() async {
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("auth_token");
-    final userId = prefs.getString("user_id");
+    final token = box.read('auth_token');
+    final userId = box.read('user_id');
 
     if (token == null || userId == null) {
-      print("❌ Token atau UserID tidak ditemukan");
+      print("❌ Token/UserID tidak ada");
       return;
     }
 
@@ -70,9 +62,6 @@ Future<void> loadUserData() async {
       ApiConfig.historiUrlByUser(userId),
     );
 
-    print("REQUEST HISTORI: $url");
-    print("TOKEN HISTORI: $token");
-
     try {
 
       final response = await http.get(
@@ -83,56 +72,52 @@ Future<void> loadUserData() async {
         },
       );
 
+      /// 🔐 HANDLE TOKEN EXPIRED
+if (response.statusCode == 401) {
+  final body = jsonDecode(response.body);
+
+  if (body["msg"] == "Token has expired") {
+    print("🔐 Token expired → logout");
+
+    box.erase();
+    Get.offAllNamed('/login');
+    return;
+  }
+}
+
       if (response.statusCode == 200) {
 
         final data = jsonDecode(response.body);
 
         if (data["status"] == "success") {
-
           historiList.value =
               List<Map<String, dynamic>>.from(data["data"]);
-
-          print("✅ Histori berhasil diambil: ${historiList.length}");
         }
 
       } else {
-
         print("❌ Fetch histori gagal: ${response.statusCode}");
-        print(response.body);
-
       }
 
     } catch (e) {
-
       print("❌ Error fetch histori: $e");
-
     } finally {
-
       isLoading.value = false;
-
     }
   }
 
   /// ==============================
   /// FETCH STATS
   /// ==============================
-
   Future<void> fetchStats() async {
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString("auth_token");
-    final userId = prefs.getString("user_id");
+    final token = box.read('auth_token');
+    final userId = box.read('user_id');
 
-    if (token == null || userId == null) {
-      print("❌ Token atau UserID tidak ditemukan");
-      return;
-    }
+    if (token == null || userId == null) return;
 
     final url = Uri.parse(
       "${ApiConfig.historiUrl}/stats/$userId",
     );
-
-    print("REQUEST STATS: $url");
 
     try {
 
@@ -140,49 +125,46 @@ Future<void> loadUserData() async {
         url,
         headers: {
           "Authorization": "Bearer $token",
-          "Content-Type": "application/json",
         },
       );
+
+      /// 🔐 HANDLE TOKEN EXPIRED
+if (response.statusCode == 401) {
+  final body = jsonDecode(response.body);
+
+  if (body["msg"] == "Token has expired") {
+    print("🔐 Token expired → logout");
+
+    box.erase();
+    Get.offAllNamed('/login');
+    return;
+  }
+}
 
       if (response.statusCode == 200) {
 
         final data = jsonDecode(response.body);
 
         if (data["status"] == "success") {
-
           totalLatihan.value = data["total"] ?? 0;
-
           avgAccuracy.value =
               (data["avg_accuracy"] ?? 0).toDouble();
-
-          print("✅ Stats diambil");
         }
 
       } else {
-
         print("❌ Fetch stats gagal: ${response.statusCode}");
-        print(response.body);
-
       }
 
     } catch (e) {
-
       print("❌ Error fetch stats: $e");
-
     }
   }
 
   /// ==============================
-  /// REFRESH HISTORI
+  /// REFRESH
   /// ==============================
-
   Future<void> refreshHistory() async {
-
-    print("🔄 Refresh histori");
-
     await fetchHistory();
     await fetchStats();
-
   }
-
 }

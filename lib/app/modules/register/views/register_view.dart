@@ -11,8 +11,7 @@ class RegisterView extends GetView<RegisterController> {
       backgroundColor: const Color(0xFFFBFDFF),
       body: Stack(
         children: [
-
-          // Background decoration
+          // Background decoration (Lingkaran di pojok kiri atas)
           Positioned(
             top: -50,
             left: -50,
@@ -32,9 +31,9 @@ class RegisterView extends GetView<RegisterController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const SizedBox(height: 40), // Spasi atas tambahan
 
                       /// ================= HEADER =================
-
                       const Text(
                         "Daftar Akun",
                         style: TextStyle(
@@ -58,12 +57,10 @@ class RegisterView extends GetView<RegisterController> {
 
                       const SizedBox(height: 35),
 
-                      /// ================= EMAIL =================
-
+                      /// ================= FIELD INPUTS =================
+                      
                       _buildLabel("Email Ibu"),
-
                       const SizedBox(height: 8),
-
                       _buildTextField(
                         controller: controller.emailController,
                         hint: "Contoh: ibu@email.com",
@@ -72,12 +69,8 @@ class RegisterView extends GetView<RegisterController> {
 
                       const SizedBox(height: 20),
 
-                      /// ================= NAMA IBU =================
-
                       _buildLabel("Nama Lengkap Ibu"),
-
                       const SizedBox(height: 8),
-
                       _buildTextField(
                         controller: controller.nameController,
                         hint: "Masukkan nama lengkap",
@@ -86,12 +79,8 @@ class RegisterView extends GetView<RegisterController> {
 
                       const SizedBox(height: 20),
 
-                      /// ================= PASSWORD =================
-
                       _buildLabel("Kata Sandi"),
-
                       const SizedBox(height: 8),
-
                       _buildTextField(
                         controller: controller.passwordController,
                         hint: "••••••••",
@@ -102,7 +91,6 @@ class RegisterView extends GetView<RegisterController> {
                       const SizedBox(height: 30),
 
                       /// ================= DATA SUAMI =================
-
                       const Text(
                         "Data Pendamping (Opsional)",
                         style: TextStyle(
@@ -114,12 +102,8 @@ class RegisterView extends GetView<RegisterController> {
 
                       const SizedBox(height: 20),
 
-                      /// NAMA SUAMI
-
                       _buildLabel("Nama Suami"),
-
                       const SizedBox(height: 8),
-
                       _buildTextField(
                         controller: controller.husbandNameController,
                         hint: "Masukkan nama suami",
@@ -128,12 +112,8 @@ class RegisterView extends GetView<RegisterController> {
 
                       const SizedBox(height: 20),
 
-                      /// EMAIL SUAMI
-
                       _buildLabel("Email Suami"),
-
                       const SizedBox(height: 8),
-
                       _buildTextField(
                         controller: controller.husbandEmailController,
                         hint: "Masukkan email suami",
@@ -143,13 +123,11 @@ class RegisterView extends GetView<RegisterController> {
                       const SizedBox(height: 40),
 
                       /// ================= BUTTON =================
-
                       _buildRegisterButton(),
 
                       const SizedBox(height: 32),
 
-                      /// ================= LOGIN =================
-
+                      /// ================= LOGIN LINK =================
                       Center(
                         child: GestureDetector(
                           onTap: () => Get.toNamed('/login'),
@@ -174,7 +152,7 @@ class RegisterView extends GetView<RegisterController> {
                           ),
                         ),
                       ),
-
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -186,7 +164,7 @@ class RegisterView extends GetView<RegisterController> {
     );
   }
 
-  /// ================= LABEL =================
+  /// ================= UI COMPONENTS =================
 
   Widget _buildLabel(String text) {
     return Text(
@@ -198,8 +176,6 @@ class RegisterView extends GetView<RegisterController> {
       ),
     );
   }
-
-  /// ================= TEXTFIELD =================
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -222,13 +198,15 @@ class RegisterView extends GetView<RegisterController> {
       child: TextField(
         controller: controller,
         obscureText: isPassword,
+        // Properti krusial agar teks berada di tengah secara vertikal
+        textAlignVertical: TextAlignVertical.center,
         style: const TextStyle(fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
           prefixIcon: Icon(icon, color: const Color(0xFF0C2D57), size: 20),
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          // Padding vertical disesuaikan agar tidak mendorong teks terlalu ke atas
+          contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
@@ -239,15 +217,12 @@ class RegisterView extends GetView<RegisterController> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide:
-                const BorderSide(color: Color(0xFF0C2D57), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFF0C2D57), width: 1.5),
           ),
         ),
       ),
     );
   }
-
-  /// ================= REGISTER BUTTON =================
 
   Widget _buildRegisterButton() {
     return Container(

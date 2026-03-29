@@ -1,53 +1,71 @@
 import 'dart:convert';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:pyhsiocare/config/api_config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class InformasiController extends GetxController {
+
+  final box = GetStorage();
 
   var informasiList = [].obs;
   var selectedData = Rxn<dynamic>();
 
   @override
   void onInit() {
-    fetchInformasi();
     super.onInit();
+    fetchInformasi();
   }
 
   Future fetchInformasi() async {
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final token = box.read('auth_token');
 
-    final response = await http.get(
-      Uri.parse("${ApiConfig.baseUrl}/informasi"),
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json"
-      }
-    );
-
-    if(response.statusCode == 200){
-
-      final data = jsonDecode(response.body);
-
-      informasiList.value = data["data"];
-
-    } else {
-
-      print("Gagal ambil informasi: ${response.body}");
-
+    if (token == null) {
+      print("❌ Token tidak ada");
+      return;
     }
 
+    try {
+      final response = await http.get(
+        Uri.parse("${ApiConfig.baseUrl}/informasi"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json"
+        }
+      );
+
+      /// 🔐 HANDLE TOKEN EXPIRED
+      if (response.statusCode == 401) {
+        final body = jsonDecode(response.body);
+
+        if (body["msg"] == "Token has expired") {
+          print("🔐 Token expired → logout");
+
+          box.erase();
+          Get.offAllNamed('/login');
+          return;
+        }
+      }
+
+      if(response.statusCode == 200){
+
+        final data = jsonDecode(response.body);
+        informasiList.value = data["data"];
+
+      } else {
+        print("❌ Gagal ambil informasi: ${response.body}");
+      }
+
+    } catch (e) {
+      print("❌ Error: $e");
+    }
   }
 
-    // 🔥 pilih data
   void selectData(dynamic data) {
     selectedData.value = data;
   }
 
-  // 🔥 kembali ke list
   void clearSelected() {
     selectedData.value = null;
   }

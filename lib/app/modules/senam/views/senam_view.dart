@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pyhsiocare/app/modules/histori/views/histori_view.dart';
 import 'package:pyhsiocare/app/modules/senam/views/senam_session_view.dart';
+import 'package:pyhsiocare/app/modules/senam/views/senam_validasi_view.dart';
 import '../controllers/senam_controller.dart';
 import '../../home/controllers/home_controller.dart';
 
@@ -175,7 +176,7 @@ class SenamView extends GetView<SenamController> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
-                  Get.to(() => SenamSessionView(
+                  Get.to(() => SenamValidasiView(
                         title: data["title"] ?? "Latihan",
                         image: data["image"] ?? "",
                         desc: data["desc"] ?? "",

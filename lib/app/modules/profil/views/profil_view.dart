@@ -113,7 +113,7 @@ class ProfileView extends GetView<ProfileController> {
                   ),
                 )),
             const Text(
-              "Pasien PhysioCare",
+              "Pengguna PregMate",
               style: TextStyle(
                 color: Color(0xFF64748B),
                 fontSize: 14,
@@ -146,7 +146,7 @@ class ProfileView extends GetView<ProfileController> {
             _buildModernMenu(
               icon: Icons.info_outline_rounded,
               title: "Tentang Aplikasi",
-              subtitle: "Pelajari lebih lanjut tentang PhysioCare",
+              subtitle: "Pelajari lebih lanjut tentang PregMate",
               onTap: controller.showAbout,
               accentColor: Colors.blue.shade600,
             ),
@@ -162,7 +162,7 @@ class ProfileView extends GetView<ProfileController> {
             const SizedBox(height: 40),
 
             Text(
-              "PhysioCare Mobile v2.1.0",
+              "PregMate Mobile v2.1.0",
               style: TextStyle(
                 color: Colors.grey[400],
                 fontSize: 12,

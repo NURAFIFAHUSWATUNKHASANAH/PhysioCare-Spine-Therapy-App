@@ -1,13 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+
 import 'package:pyhsiocare/app/modules/profil/controllers/profil_controller.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pyhsiocare/app/routes/app_pages.dart';
 import 'package:pyhsiocare/config/api_config.dart';
 
 class EditProfileController extends GetxController {
+
+  final box = GetStorage();
+
   final namaC = TextEditingController();
   final emailC = TextEditingController();
   final passwordC = TextEditingController();
@@ -25,28 +29,31 @@ class EditProfileController extends GetxController {
     fetchUserIdAndData();
   }
 
-  void fetchUserIdAndData() async {
-    final prefs = await SharedPreferences.getInstance();
+  String? get token => box.read("auth_token");
 
-    // Cek apakah login Google atau manual
-    final googleEmail = prefs.getString('googleEmail');
+  void fetchUserIdAndData() async {
+
+    final googleEmail = box.read('googleEmail');
+
     if (googleEmail != null && googleEmail.isNotEmpty) {
-      // Login Google terdeteksi
+
       isGoogleLogin = true;
-      currentNama.value = prefs.getString('googleName') ?? '';
+
+      currentNama.value = box.read('googleName') ?? '';
       currentEmail.value = googleEmail;
 
       namaC.text = currentNama.value;
       emailC.text = currentEmail.value;
 
-      // Jika mau, kamu bisa sembunyikan password field di UI saat Google login
     } else {
-      // Login manual
-      userId = prefs.getString('user_id');
+
+      userId = box.read('user_id');
+
       if (userId == null) {
         Get.snackbar("Error", "User ID tidak ditemukan");
         return;
       }
+
       await fetchUserData();
     }
   }
@@ -55,10 +62,10 @@ class EditProfileController extends GetxController {
     isLoading.value = true;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
 
-      if (token == null) {
+      final tokenValue = token;
+
+      if (tokenValue == null || tokenValue.isEmpty) {
         Get.snackbar("Error", "Token tidak ditemukan");
         return;
       }
@@ -66,33 +73,33 @@ class EditProfileController extends GetxController {
       final response = await http.get(
         Uri.parse(ApiConfig.userProfileUrl(userId ?? '')),
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $tokenValue',
         },
       );
 
       if (response.statusCode == 200) {
+
         final data = json.decode(response.body);
+
         currentNama.value = data['nama'] ?? '';
         currentEmail.value = data['email'] ?? '';
+
         namaC.text = currentNama.value;
         emailC.text = currentEmail.value;
+
       } else {
+
         Get.snackbar("Gagal", "Tidak dapat mengambil data pengguna");
       }
+
     } catch (e) {
-      Get.snackbar("Error", "Terjadi kesalahan: $e");
+      Get.snackbar("Error", e.toString());
     } finally {
       isLoading.value = false;
     }
   }
 
   void updateProfile() async {
-    // *IZINKAN* update profil untuk user Google juga
-    // Jadi hapus atau komentar pengecekan ini
-    // if (isGoogleLogin) {
-    //   Get.snackbar("Info", "Profil Google tidak dapat diubah melalui aplikasi ini.");
-    //   return;
-    // }
 
     String newNama = namaC.text.trim();
     String newEmail = emailC.text.trim();
@@ -103,11 +110,12 @@ class EditProfileController extends GetxController {
     if (newNama.isNotEmpty && newNama != currentNama.value) {
       dataToUpdate['nama'] = newNama;
     }
+
     if (newEmail.isNotEmpty && newEmail != currentEmail.value) {
       dataToUpdate['email'] = newEmail;
     }
+
     if (!isGoogleLogin && newPassword.isNotEmpty) {
-      // Biasanya user Google gak perlu atau gak bisa update password di sini
       dataToUpdate['password'] = newPassword;
     }
 
@@ -117,60 +125,59 @@ class EditProfileController extends GetxController {
     }
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      final userIdToUse = isGoogleLogin ? prefs.getString('_id') : userId;
 
-      if (token == null || userIdToUse == null) {
-        Get.snackbar("Error", "Token atau User ID tidak ditemukan");
+      final tokenValue = token;
+
+      if (tokenValue == null || tokenValue.isEmpty) {
+        Get.snackbar("Error", "Token tidak ditemukan");
+        return;
+      }
+
+      final userIdToUse = isGoogleLogin ? box.read('_id') : userId;
+
+      if (userIdToUse == null) {
+        Get.snackbar("Error", "User ID tidak ditemukan");
         return;
       }
 
       final response = await http.put(
         Uri.parse(ApiConfig.updateUserUrl(userIdToUse)),
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $tokenValue',
           'Content-Type': 'application/json',
         },
         body: json.encode(dataToUpdate),
       );
 
       if (response.statusCode == 200) {
-        // Update di ProfileController juga biar UI update
+
         final profileController = Get.find<ProfileController>();
         await profileController.fetchUserProfile();
 
-        if (dataToUpdate.containsKey('nama')) currentNama.value = newNama;
-        if (dataToUpdate.containsKey('email')) currentEmail.value = newEmail;
+        if (dataToUpdate.containsKey('nama')) {
+          currentNama.value = newNama;
+          box.write(isGoogleLogin ? 'googleName' : 'user_nama', newNama);
+        }
+
+        if (dataToUpdate.containsKey('email')) {
+          currentEmail.value = newEmail;
+          box.write(isGoogleLogin ? 'googleEmail' : 'user_email', newEmail);
+        }
+
         passwordC.clear();
 
-        await fetchUserData();
-
-        // Update SharedPreferences juga supaya konsisten
-        final prefs = await SharedPreferences.getInstance();
-        if (dataToUpdate.containsKey('nama')) {
-          if (isGoogleLogin) {
-            await prefs.setString('googleName', newNama);
-          } else {
-            await prefs.setString('user_nama', newNama);
-          }
-        }
-        if (dataToUpdate.containsKey('email')) {
-          if (isGoogleLogin) {
-            await prefs.setString('googleEmail', newEmail);
-          } else {
-            await prefs.setString('user_email', newEmail);
-          }
-        }
-
         Get.snackbar("Sukses", "Profil berhasil diperbarui.");
-        Get.offAllNamed(Routes.BOTTOM, arguments: 3); // Arahkan ke tab profil
-      } else {
-        Get.snackbar("Gagal", "Password Minimal 6 Karakter");
+        Get.offAllNamed(Routes.BOTTOM, arguments: 3);
 
+      } else {
+
+        print(response.body);
+
+        Get.snackbar("Gagal", "Gagal update profil (${response.statusCode})");
       }
+
     } catch (e) {
-      Get.snackbar("Error", "Terjadi kesalahan: $e");
+      Get.snackbar("Error", e.toString());
     }
   }
 }
